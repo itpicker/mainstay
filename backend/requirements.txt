@@ -4,3 +4,7 @@ langchain
 langgraph
 pydantic
 python-dotenv
+langchain-openai
+langchain-ollama
+
+
