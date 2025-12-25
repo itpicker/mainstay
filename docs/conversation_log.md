@@ -2,20 +2,14 @@
 
 ## 2025-12-25
 ### 요청 사항
-- Mainstay 서비스 개발 시작.
-- LangGraph, LangChain 사용.
-- 사용자 작업 등록 기능부터 구현.
-- docs 디렉터리에 대화 기록 저장.
-- Implementation Plan 한국어 제공.
-
-### 결정 사항
-- 기술 스택: Next.js (Frontend) + FastAPI (Backend).
+...
+- **계속된 영어 답변 이슈 해결 요청**.
 
 ### 구현 진행 상황
-- **프로젝트 초기화 완료**: Frontend(Next.js), Backend(FastAPI) 설치 및 연동 준비.
-- **작업 입력 기능 구현**:
-  - Frontend: Landing 페이지, Dashboard, 작업 입력 폼 구현.
-  - Backend: `/tasks` API 구현 및 CORS 설정 완료.
-- **검증**:
-  - 브라우저 에이전트를 통해 작업 입력 시나리오 테스트 성공.
-  - 백엔드 로그 확인 완료.
+...
+- **에이전트 로직 개선 (Logic Enhancement)**:
+  - **무한 반복 해결**: Deterministic Routing 적용 완료.
+  - **다국어 지원 강화**: Planner와 Executor 프롬프트에 `CRITICAL INSTRUCTION`을 추가하여, 한국어 질문에는 반드시 한국어로 답변하도록 강제함.
+- **최종 검증**:
+  - 한국어 요청에 대해 한국어로 계획 및 실행 결과를 반환하는 것을 확인.
+  - 로직이 안정화됨.

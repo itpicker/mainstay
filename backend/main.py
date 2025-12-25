@@ -33,12 +33,15 @@ def create_task(task: TaskInput):
     final_state = graph.invoke(initial_state)
     
     # Extract the final answer/result
-    # This might need refinement depending on what we want to return
-    # For now, return the full history or the last message
-    history = [m.content for m in final_state["messages"]]
+    # The last message is usually the "Final Answer" from the Executor or Supervisor
+    messages = final_state["messages"]
+    history = [m.content for m in messages]
+    final_result = history[-1] if history else ""
+    execution_logs = history[:-1] if len(history) > 1 else []
     
     return {
         "message": "Task processed", 
         "task_description": task.description,
-        "result_history": history
+        "final_result": final_result,
+        "execution_logs": execution_logs
     }
