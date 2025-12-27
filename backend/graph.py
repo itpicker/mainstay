@@ -2,17 +2,22 @@ from langgraph.graph import StateGraph, END
 from backend.agents.state import AgentState
 from backend.agents.supervisor import supervisor_node
 from backend.agents.planner import planner_node
-from backend.agents.executor import executor_node
+from backend.agents.researcher import researcher_node
+from backend.agents.developer import developer_node
 
-# Nodes - simplified as they now get LLM internally
-# The node functions in separate files now take only (state) as argument because they use get_llm() internally
+def analyst_node(state: AgentState):
+    # Fallback or simple implementation for Analyst if needed
+    from langchain_core.messages import AIMessage
+    return {"messages": [AIMessage(content="Analyst work complete (simulated).", name="Analyst")]}
 
 # Graph Construction
 workflow = StateGraph(AgentState)
 
 workflow.add_node("Supervisor", supervisor_node)
 workflow.add_node("Planner", planner_node)
-workflow.add_node("Executor", executor_node)
+workflow.add_node("Researcher", researcher_node)
+workflow.add_node("Developer", developer_node)
+workflow.add_node("Analyst", analyst_node)
 
 # Edges
 workflow.set_entry_point("Supervisor")
@@ -23,13 +28,17 @@ workflow.add_conditional_edges(
     lambda x: x["next_step"],
     {
         "Planner": "Planner",
-        "Executor": "Executor",
+        "Researcher": "Researcher",
+        "Developer": "Developer",
+        "Analyst": "Analyst",
         "FINISH": END
     }
 )
 
-# Workers return to supervisor
+# Specialists return to supervisor
 workflow.add_edge("Planner", "Supervisor")
-workflow.add_edge("Executor", "Supervisor")
+workflow.add_edge("Researcher", "Supervisor")
+workflow.add_edge("Developer", "Supervisor")
+workflow.add_edge("Analyst", "Supervisor")
 
 graph = workflow.compile()

@@ -26,22 +26,30 @@ def read_root():
 
 @app.post("/tasks")
 def create_task(task: TaskInput):
-    initial_state = {"messages": [HumanMessage(content=task.description, name="User")]}
+    initial_state = {
+        "project_id": "proj_" + str(hash(task.description))[:8],
+        "messages": [HumanMessage(content=task.description, name="User")],
+        "team": [],
+        "goal_dag": {},
+        "knowledge_base": {},
+        "execution_logs": ["Project initiated by user."],
+        "active_specialist": "Supervisor",
+        "next_step": "Planner"
+    }
     
     # Run the graph
     # Using invoke for synchronous run (simple for now)
     final_state = graph.invoke(initial_state)
     
-    # Extract the final answer/result
-    # The last message is usually the "Final Answer" from the Executor or Supervisor
-    messages = final_state["messages"]
-    history = [m.content for m in messages]
-    final_result = history[-1] if history else ""
-    execution_logs = history[:-1] if len(history) > 1 else []
+    # Extract the final answer/result and detailed logs
+    final_result = final_state["messages"][-1].content if final_state["messages"] else ""
+    execution_logs = final_state.get("execution_logs", [])
+    knowledge_base = final_state.get("knowledge_base", {})
     
     return {
         "message": "Task processed", 
         "task_description": task.description,
         "final_result": final_result,
-        "execution_logs": execution_logs
+        "execution_logs": execution_logs,
+        "findings": knowledge_base
     }
