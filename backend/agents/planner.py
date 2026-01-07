@@ -24,8 +24,10 @@ def planner_node(state: AgentState):
     system_msg = (
         "You are the Project Manager for Mainstay. Your goal is to decompose the user's project request "
         "into a structured set of tasks (Goal DAG). Identify which specialists (Developer, Researcher, Analyst) "
-        "should handle each task. If the request is simple, create a simple plan. If complex, break it down logically.\n"
-        "CRITICAL: Respond in the user's language (Korean if the request is in Korean)."
+        "should handle each task. Assignees MUST be one of: 'Developer', 'Researcher', or 'Analyst'.\n"
+        "If the request is simple, create a simple plan. If complex, break it down logically.\n"
+        "CRITICAL: Respond in the user's language (Korean if the request is in Korean). "
+        "Every task must have a title, description, and a valid assignee."
     )
     
     response = structured_llm.invoke([

@@ -24,8 +24,12 @@ def supervisor_node(state: AgentState):
     
     if next_task:
         # Route to the assignee
-        assignee = next_task["assignee"]
-        return {"next_step": assignee, "active_specialist": "Supervisor"}
+        assignee = next_task.get("assignee")
+        valid_assignees = ["Developer", "Researcher", "Analyst", "Planner"]
+        if assignee in valid_assignees:
+            return {"next_step": assignee, "active_specialist": "Supervisor"}
+        else:
+            return {"next_step": "Planner", "active_specialist": "Supervisor"}
     else:
         # All tasks completed
         return {"next_step": "FINISH", "active_specialist": "Supervisor"}
