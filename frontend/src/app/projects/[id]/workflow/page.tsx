@@ -23,6 +23,8 @@ import AgentNode from '@/components/workflow/AgentNode';
 import DeletableEdge from '@/components/workflow/DeletableEdge';
 import { AgentRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { NodeInspector } from '@/components/workflow/NodeInspector';
+import { EdgeInspector } from '@/components/workflow/EdgeInspector';
 
 // Node Types Registration
 const nodeTypes = {
@@ -78,6 +80,57 @@ function WorkflowEditor() {
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const [isSaved, setIsSaved] = useState(true);
     const { screenToFlowPosition } = useReactFlow();
+    const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+    const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
+
+    const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+        setSelectedNode(node);
+        setSelectedEdge(null); // Clear edge selection
+    }, []);
+
+    const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+        setSelectedEdge(edge);
+        setSelectedNode(null); // Clear node selection
+    }, []);
+
+    const onPaneClick = useCallback(() => {
+        setSelectedNode(null);
+        setSelectedEdge(null);
+    }, []);
+
+    const onNodeUpdate = useCallback((nodeId: string, newData: any) => {
+        setNodes((nds) =>
+            nds.map((node) => {
+                if (node.id === nodeId) {
+                    return {
+                        ...node,
+                        data: { ...node.data, ...newData },
+                    };
+                }
+                return node;
+            })
+        );
+        setSelectedNode((prev) => prev?.id === nodeId ? { ...prev, data: { ...prev.data, ...newData } } : prev);
+        setIsSaved(false);
+    }, [setNodes]);
+
+    const onEdgeUpdate = useCallback((edgeId: string, newData: any) => {
+        setEdges((eds) =>
+            eds.map((edge) => {
+                if (edge.id === edgeId) {
+                    return {
+                        ...edge,
+                        data: { ...edge.data, ...newData },
+                    };
+                }
+                return edge;
+            })
+        );
+        setSelectedEdge((prev) => prev?.id === edgeId ? { ...prev, data: { ...prev.data, ...newData } } : prev);
+        setIsSaved(false);
+    }, [setEdges]);
+
+
 
     const onConnect = useCallback(
         (params: Connection) => {
@@ -204,26 +257,40 @@ function WorkflowEditor() {
                 </aside>
 
                 {/* Canvas */}
-                <div className="flex-1 border border-white/10 rounded-xl overflow-hidden glass-card relative h-full" ref={reactFlowWrapper}>
-                    <ReactFlow
-                        nodes={nodes}
-                        edges={edges}
-                        onNodesChange={onNodesChange}
-                        onEdgesChange={onEdgesChange}
-                        onConnect={onConnect}
-                        onDragOver={onDragOver}
-                        onDrop={onDrop}
-                        nodeTypes={nodeTypes}
-                        edgeTypes={edgeTypes}
-                        fitView
-                        className="bg-black/20"
-                    >
-                        <Controls className="bg-secondary/50 border-white/10 text-foreground fill-foreground" />
-                        <Background color="#444" gap={20} size={1} />
-                        <Panel position="top-right" className="bg-card/80 backdrop-blur border border-white/10 p-2 rounded-lg text-xs font-mono text-muted-foreground">
-                            Nodes: {nodes.length} | Edges: {edges.length}
-                        </Panel>
-                    </ReactFlow>
+                <div className="flex-1 border border-white/10 rounded-xl overflow-hidden glass-card relative h-full flex" ref={reactFlowWrapper}>
+                    <div className="flex-1 h-full">
+                        <ReactFlow
+                            nodes={nodes}
+                            edges={edges}
+                            onNodesChange={onNodesChange}
+                            onEdgesChange={onEdgesChange}
+                            onConnect={onConnect}
+                            onDragOver={onDragOver}
+                            onDrop={onDrop}
+                            onNodeClick={onNodeClick}
+                            onEdgeClick={onEdgeClick}
+                            onPaneClick={onPaneClick}
+                            nodeTypes={nodeTypes}
+                            edgeTypes={edgeTypes}
+                            fitView
+                            className="bg-black/20"
+                        >
+                            <Controls className="bg-secondary/50 border-white/10 text-foreground fill-foreground" />
+                            <Background color="#444" gap={20} size={1} />
+                            <Panel position="top-right" className="bg-card/80 backdrop-blur border border-white/10 p-2 rounded-lg text-xs font-mono text-muted-foreground mr-12">
+                                Nodes: {nodes.length} | Edges: {edges.length}
+                            </Panel>
+                        </ReactFlow>
+                    </div>
+
+                    {/* Inspector Panel Overlay */}
+                    {selectedNode && (
+                        <NodeInspector
+                            node={selectedNode}
+                            onClose={() => setSelectedNode(null)}
+                            onUpdate={onNodeUpdate}
+                        />
+                    )}
                 </div>
             </div>
         </div>
