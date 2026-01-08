@@ -16,6 +16,7 @@ import { TaskDetailModal } from '@/components/project/TaskDetailModal';
 import { ProjectReviews } from '@/components/project/ProjectReviews';
 import { ProjectPhaseHeader } from '@/components/project/ProjectPhaseHeader';
 import { ChangeRequestModal } from '@/components/project/ChangeRequestModal';
+import { TaskDependencyGraph } from '@/components/project/TaskDependencyGraph';
 
 const initialStages: ProjectStage[] = [
     { id: 'todo', name: 'To Do', color: 'bg-slate-500' },
@@ -90,6 +91,7 @@ const initialTasks: Task[] = [
                 status: 'ONLINE', metadata: { environment: 'STAGING', version: 'v1.0.2-beta', testStatus: 'PASS' }
             }
         ],
+        dependencies: ['101'] // Depends on Brand Guidelines
     },
     {
         id: '103',
@@ -348,6 +350,9 @@ export default function ProjectDetailsPage() {
                             changeRequests={changeRequests}
                             onAction={handleReviewAction}
                         />
+                    )}
+                    {view === 'GRAPH' && (
+                        <TaskDependencyGraph tasks={tasks} agents={mockAgents} />
                     )}
                 </div>
             </div>

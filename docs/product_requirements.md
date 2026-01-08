@@ -19,13 +19,39 @@ To ensure project completion, the lifecycle is divided into two rigid phases:
 
 ### 2.2. Human-in-the-Loop Validation
 AI autonomy is bounded by human oversight.
-- **Review Requests**: Agents cannot mark tasks as "Done" without human approval.
-- **Inbox**: A centralized dashboard for all pending decisions (Approvals, Rejections, Feedback).
-- **Project History**: A dedicated `Reviews` tab in each project tracks the decision log.
+- **Review Requests**: Critical decisions (e.g., DB deletion, public release) generate a `ReviewRequest`.
+- **Intervention**: The user can "pause" or "kill" an agent at any time.
 
-## 3. Key Modules
+## 3. Agent Collaboration & Orchestration (The "Core")
 
-### 3.1. Organization & Hierarchy
+This system defines how agents interact, hand-off work, and execute in parallel.
+
+### 3.1. Collaboration Patterns
+1.  **Supervisor-Worker (Hierarchical)**
+    - **Example**: `PM Agent` breaks down a requirement -> Assigns to `Dev Agent` & `Design Agent`.
+    - **Process**: PM monitors progress and aggregates results.
+2.  **Sequential Hand-off (Dependency)**
+    - **Example**: `Design Agent` (Output: Figma) -> `Frontend Agent` (Input: Figma).
+    - **Constraint**: Task B cannot start until Task A is `DONE` and Artifacts are `READY`.
+3.  **Parallel Execution (Async)**
+    - **Example**: `Frontend Agent` works on UI while `Backend Agent` builds API.
+    - **Sync Point**: Both must trigger a `Merge` event at the `Integration` milestone.
+4.  **Review Loop (Quality Gate)**
+    - **Example**: `Dev Agent` submits PR -> `Reviewer Agent` (or Human) approves/rejects -> `Dev Agent` fixes.
+
+### 3.2. Agent Roles & Responsibilities
+- **Project Manager (PM)**: Orchestra conductor. Breaks down PRD, handles dependencies, resolves blockers.
+- **Architect**: Sets technical constraints (Stack, DB Schema).
+- **Designer**: Produces visual specs (Images, JSON Styles).
+- **Developer**: Implementation (Frontend/Backend). Needs clear inputs (Specs).
+- **Reviewer**: QA & Security check.
+
+### 3.3. Execution Graph
+The workflow is executed as a **Directed Acyclic Graph (DAG)** where nodes are Tasks and edges are Dependencies/Data Flows.
+
+## 4. Key Modules
+
+### 4.1. Organization & Hierarchy
 - **Workspaces**: Top-level container supporting `Personal`, `Team`, and `Enterprise` types.
 - **Projects**: Each project belongs to a workspace and contains its own agents, tasks, and artifacts.
 

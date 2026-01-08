@@ -59,6 +59,7 @@ export interface Project {
     id: string;
     workspaceId: string;
     name: string;
+    description: string; // Restored
     status: ProjectStatus;
     lifecycle: ProjectLifecycle; // Restored field for Phase Management
     workflowStage?: string; // Dynamic Stage ID
@@ -107,6 +108,20 @@ export interface Task {
         title: string;
         completed: boolean;
     }[];
+    dependencies?: string[]; // Task IDs that must complete before this task can start
+    createdAt?: string;
+}
+
+export interface AgentMessage {
+    id: string;
+    fromAgentId: string;
+    toAgentId: string; // or 'BROADCAST'
+    projectId: string;
+    taskId?: string; // Context
+    type: 'HANDOFF' | 'REQUEST_INFO' | 'BLOCKER' | 'APPROVAL';
+    content: string;
+    timestamp: string;
+    read: boolean;
 }
 
 export interface Agent {

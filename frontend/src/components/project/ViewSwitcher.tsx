@@ -1,9 +1,9 @@
 'use client';
 
-import { Kanban, List, Calendar, FolderOpen, MessageSquare } from 'lucide-react';
+import { LayoutGrid, List, Calendar, Box, MessageSquare, Network } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type ProjectView = 'KANBAN' | 'TABLE' | 'TIMELINE' | 'ARTIFACTS' | 'REVIEWS';
+export type ProjectView = 'KANBAN' | 'TABLE' | 'TIMELINE' | 'ARTIFACTS' | 'REVIEWS' | 'GRAPH';
 
 interface ViewSwitcherProps {
     currentView: ProjectView;
@@ -12,11 +12,12 @@ interface ViewSwitcherProps {
 
 export function ViewSwitcher({ currentView, onViewChange }: ViewSwitcherProps) {
     const views: { id: ProjectView; label: string; icon: any }[] = [
-        { id: 'KANBAN', label: 'Board', icon: Kanban },
+        { id: 'KANBAN', label: 'Board', icon: LayoutGrid },
         { id: 'TABLE', label: 'List', icon: List },
         { id: 'TIMELINE', label: 'Timeline', icon: Calendar },
-        { id: 'ARTIFACTS', label: 'Artifacts', icon: FolderOpen },
+        { id: 'ARTIFACTS', label: 'Artifacts', icon: Box },
         { id: 'REVIEWS', label: 'Reviews', icon: MessageSquare },
+        { id: 'GRAPH', label: 'Workflow', icon: Network },
     ];
 
     return (
