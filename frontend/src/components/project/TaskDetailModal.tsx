@@ -5,6 +5,7 @@ import { X, CheckSquare, Square, Trash2, Calendar, UserCircle, Paperclip, Edit2,
 import { Task, Agent } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ProjectArtifacts } from './ProjectArtifacts';
+import { formatDate } from '@/lib/date';
 
 interface TaskDetailModalProps {
     task: Task | null;
@@ -255,14 +256,14 @@ export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents }: Tas
                             <label className="text-xs font-semibold text-muted-foreground uppercase">Start Date</label>
                             <div className="flex items-center gap-2 text-sm">
                                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                                {currentTask.startDate ? new Date(currentTask.startDate).toLocaleDateString() : "-"}
+                                {formatDate(currentTask.startDate)}
                             </div>
                         </div>
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-muted-foreground uppercase">Due Date</label>
                             <div className="flex items-center gap-2 text-sm">
                                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                                {currentTask.endDate ? new Date(currentTask.endDate).toLocaleDateString() : "-"}
+                                {formatDate(currentTask.endDate)}
                             </div>
                         </div>
                     </div>

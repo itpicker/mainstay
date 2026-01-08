@@ -2,6 +2,7 @@
 
 import { Task, Agent } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/date';
 
 interface ProjectTimelineProps {
     tasks: Task[];
@@ -36,7 +37,7 @@ export function ProjectTimeline({ tasks }: ProjectTimelineProps) {
                                 }}
                             >
                                 <span className="px-2 text-[10px] text-white font-bold leading-6 truncate block">
-                                    {new Date(task.startDate || Date.now()).toLocaleDateString()} - {new Date(task.endDate || Date.now()).toLocaleDateString()}
+                                    {formatDate(task.startDate || new Date().toISOString())} - {formatDate(task.endDate || new Date().toISOString())}
                                 </span>
                             </div>
                         </div>

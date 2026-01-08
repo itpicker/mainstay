@@ -1,9 +1,22 @@
+export type ProjectLifecycle = 'PLANNING' | 'EXECUTION' | 'COMPLETED';
+
 export type ProjectStatus = 'ACTIVE' | 'ARCHIVED' | 'COMPLETED' | 'PLANNING';
 export type TaskStatus = string;
 export type AgentStatus = 'IDLE' | 'BUSY' | 'OFFLINE';
 export type AgentRole = 'RESEARCHER' | 'DEVELOPER' | 'DESIGNER' | 'REVIEWER' | 'MANAGER';
 
 export type ReviewStatus = 'PENDING' | 'APPROVED' | 'CHANGES_REQUESTED' | 'REJECTED';
+
+export interface ChangeRequest {
+    id: string;
+    projectId: string;
+    title: string;
+    description: string;
+    impactAnalysis: string; // AI generated or user input
+    status: ReviewStatus;
+    requestedBy: string; // 'USER' or 'AGENT'
+    createdAt: string;
+}
 
 export interface ReviewRequest {
     id: string;
@@ -35,6 +48,9 @@ export interface Project {
     name: string;
     description: string;
     status: ProjectStatus;
+    lifecycle: ProjectLifecycle; // New field
+    isPlanningFrozen: boolean;   // New field
+    planningFrozenAt?: string;   // New field
     createdAt: string;
     deadline?: string;
     taskCount: number;

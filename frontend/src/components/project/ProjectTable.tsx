@@ -4,6 +4,7 @@ import { Task, Agent, ProjectStage } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { UserCircle, Calendar, Plus, ChevronDown, ChevronRight, Edit2, Trash2, Check, X } from 'lucide-react';
 import { useState, Fragment } from 'react';
+import { formatDate } from '@/lib/date';
 
 interface ProjectTableProps {
     tasks: Task[];
@@ -172,7 +173,7 @@ export function ProjectTable({
                                             {task.endDate ? (
                                                 <div className="flex items-center gap-1.5">
                                                     <Calendar className="h-3.5 w-3.5" />
-                                                    {new Date(task.endDate).toISOString().split('T')[0]}
+                                                    {formatDate(task.endDate)}
                                                 </div>
                                             ) : '-'}
                                         </td>

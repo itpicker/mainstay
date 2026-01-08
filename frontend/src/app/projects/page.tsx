@@ -3,6 +3,7 @@
 import { Plus, Folder, Clock, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { Project, Workspace } from '@/lib/types';
+import { formatDate } from '@/lib/date';
 
 // Mock data
 const defaultStages = [
@@ -151,7 +152,7 @@ export default function ProjectsPage() {
                                             </div>
                                             <div className="flex items-center">
                                                 <Clock className="h-4 w-4 mr-1.5" />
-                                                {new Date(project.createdAt).toLocaleDateString()}
+                                                {formatDate(project.createdAt)}
                                             </div>
                                         </div>
                                         {/* Progress bar */}

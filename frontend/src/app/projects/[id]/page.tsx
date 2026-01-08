@@ -13,6 +13,8 @@ import { ProjectArtifacts } from '@/components/project/ProjectArtifacts';
 import { CreateTaskModal } from '@/components/project/CreateTaskModal';
 import { TaskDetailModal } from '@/components/project/TaskDetailModal';
 import { ProjectReviews } from '@/components/project/ProjectReviews';
+import { ProjectPhaseHeader } from '@/components/project/ProjectPhaseHeader';
+import { ChangeRequestModal } from '@/components/project/ChangeRequestModal';
 
 const initialStages: ProjectStage[] = [
     { id: 'todo', name: 'To Do', color: 'bg-slate-500' },
@@ -27,6 +29,8 @@ const mockProject: Project = {
     name: 'Website Redesign',
     description: 'Overhaul of the corporate website with new branding.',
     status: 'ACTIVE',
+    lifecycle: 'PLANNING', // Initial state
+    isPlanningFrozen: false,
     createdAt: '2025-12-01',
     taskCount: 3,
     completedTaskCount: 1,
@@ -134,6 +138,10 @@ export default function ProjectDetailsPage() {
     };
 
     const openCreateTaskModal = (status: string = 'todo') => {
+        if (project.isPlanningFrozen) {
+            alert("Planning is frozen. You must submit a Change Request to add new tasks during Execution.");
+            return;
+        }
         setNewTaskStatus(status);
         setIsTaskModalOpen(true);
     };
@@ -174,88 +182,126 @@ export default function ProjectDetailsPage() {
         setSelectedTask(updatedTask);
     };
 
+    const [project, setProject] = useState(mockProject);
+
+    const handleFreezePlanning = () => {
+        setProject({
+            ...project,
+            lifecycle: 'EXECUTION',
+            isPlanningFrozen: true,
+            planningFrozenAt: new Date().toISOString()
+        });
+    };
+
+    const [isChangeRequestOpen, setIsChangeRequestOpen] = useState(false);
+
+    const handleRequestChange = () => {
+        setIsChangeRequestOpen(true);
+    };
+
+    const handleSubmitChangeRequest = (data: { title: string; description: string; impact: string }) => {
+        console.log("Change Request Submitted:", data);
+        // Here we would typically save to backend
+        alert("Change Request Submitted! Planning is now temporarily unlocked for review.");
+    };
+
     return (
-        <div className="space-y-6 h-full flex flex-col">
-            <CreateTaskModal
-                isOpen={isTaskModalOpen}
-                onClose={() => setIsTaskModalOpen(false)}
-                onSave={handleCreateTask}
-                agents={mockAgents}
-                defaultStatus={newTaskStatus}
+        <div className="flex flex-col h-full">
+            {/* Phase Header - Global for Project */}
+            <ProjectPhaseHeader
+                project={project}
+                onFreezePlanning={handleFreezePlanning}
+                onRequestChange={handleRequestChange}
             />
 
-            <TaskDetailModal
-                task={selectedTask}
-                isOpen={isDetailModalOpen}
-                onClose={() => setIsDetailModalOpen(false)}
-                onUpdate={handleTaskUpdate}
-                agents={mockAgents}
+            <ChangeRequestModal
+                isOpen={isChangeRequestOpen}
+                onClose={() => setIsChangeRequestOpen(false)}
+                onSubmit={handleSubmitChangeRequest}
             />
 
-            {/* Header */}
-            <div className="flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-4">
-                    <Link href="/projects" className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
-                        <ArrowLeft className="h-6 w-6" />
-                    </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-3">
-                            {mockProject.name}
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 border border-green-500/20 font-medium">
-                                {mockProject.status}
-                            </span>
-                        </h1>
-                        <p className="text-muted-foreground text-sm">{mockProject.description}</p>
+            <div className="space-y-6 h-full flex flex-col p-6 pt-2">
+                <CreateTaskModal
+                    isOpen={isTaskModalOpen}
+                    onClose={() => setIsTaskModalOpen(false)}
+                    onSave={handleCreateTask}
+                    agents={mockAgents}
+                    defaultStatus={newTaskStatus}
+                />
+
+                <TaskDetailModal
+                    task={selectedTask}
+                    isOpen={isDetailModalOpen}
+                    onClose={() => setIsDetailModalOpen(false)}
+                    onUpdate={handleTaskUpdate}
+                    agents={mockAgents}
+                />
+
+                {/* Header */}
+                <div className="flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-4">
+                        <Link href="/projects" className="p-2 -ml-2 rounded-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
+                            <ArrowLeft className="h-6 w-6" />
+                        </Link>
+                        <div>
+                            <h1 className="text-2xl font-bold flex items-center gap-3">
+                                {project.name}
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 border border-green-500/20 font-medium">
+                                    {project.status}
+                                </span>
+                            </h1>
+                            <p className="text-muted-foreground text-sm">{project.description}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <ViewSwitcher currentView={view} onViewChange={setView} />
+                        <div className="w-px h-8 bg-white/10 mx-1" />
+                        <Link href={`/projects/${project.id}/workflow`} className="px-4 py-2 bg-secondary text-secondary-foreground text-sm font-medium rounded-lg hover:bg-secondary/80 transition-colors">
+                            View Workflow
+                        </Link>
+                        <button className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
+                            <Play className="h-4 w-4" /> Run Project
+                        </button>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <ViewSwitcher currentView={view} onViewChange={setView} />
-                    <div className="w-px h-8 bg-white/10 mx-1" />
-                    <Link href={`/projects/${mockProject.id}/workflow`} className="px-4 py-2 bg-secondary text-secondary-foreground text-sm font-medium rounded-lg hover:bg-secondary/80 transition-colors">
-                        View Workflow
-                    </Link>
-                    <button className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
-                        <Play className="h-4 w-4" /> Run Project
-                    </button>
-                </div>
-            </div>
 
-            {/* View Content */}
-            <div className="flex-1 min-h-0 flex flex-col">
-                {view === 'KANBAN' && (
-                    <ProjectKanban
-                        tasks={tasks}
-                        agents={mockAgents}
-                        stages={stages}
-                        onAssign={handleAssign}
-                        onCreateTask={openCreateTaskModal}
-                        onTaskClick={openTaskDetail}
-                        onAddStage={handleAddStage}
-                        onUpdateStage={handleUpdateStage}
-                        onDeleteStage={handleDeleteStage}
-                        onMoveTask={handleTaskMove}
-                    />
-                )}
-                {view === 'TABLE' && (
-                    <ProjectTable
-                        tasks={tasks}
-                        agents={mockAgents}
-                        stages={stages}
-                        onTaskClick={openTaskDetail}
-                        onCreateTask={openCreateTaskModal}
-                        onUpdateStage={handleUpdateStage}
-                        onDeleteStage={handleDeleteStage}
-                    />
-                )}
-                {view === 'TIMELINE' && (
-                    <ProjectTimeline tasks={tasks} />
-                )}
-                {view === 'ARTIFACTS' && (
-                    <ProjectArtifacts tasks={tasks} />
-                )}
-                {view === 'REVIEWS' && (
-                    <ProjectReviews projectId={mockProject.id} agents={mockAgents} />
-                )}
+                {/* View Content */}
+                <div className="flex-1 min-h-0 flex flex-col">
+                    {view === 'KANBAN' && (
+                        <ProjectKanban
+                            tasks={tasks}
+                            agents={mockAgents}
+                            stages={stages}
+                            onAssign={handleAssign}
+                            onCreateTask={openCreateTaskModal}
+                            onTaskClick={openTaskDetail}
+                            onAddStage={handleAddStage}
+                            onUpdateStage={handleUpdateStage}
+                            onDeleteStage={handleDeleteStage}
+                            onMoveTask={handleTaskMove}
+                        />
+                    )}
+                    {view === 'TABLE' && (
+                        <ProjectTable
+                            tasks={tasks}
+                            agents={mockAgents}
+                            stages={stages}
+                            onTaskClick={openTaskDetail}
+                            onCreateTask={openCreateTaskModal}
+                            onUpdateStage={handleUpdateStage}
+                            onDeleteStage={handleDeleteStage}
+                        />
+                    )}
+                    {view === 'TIMELINE' && (
+                        <ProjectTimeline tasks={tasks} />
+                    )}
+                    {view === 'ARTIFACTS' && (
+                        <ProjectArtifacts tasks={tasks} />
+                    )}
+                    {view === 'REVIEWS' && (
+                        <ProjectReviews projectId={project.id} agents={mockAgents} />
+                    )}
+                </div>
             </div>
         </div>
     );
