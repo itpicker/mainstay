@@ -54,40 +54,42 @@ export default function ProjectsPage() {
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {mockProjects.map((project) => (
-                    <div key={project.id} className="glass-card rounded-xl p-6 flex flex-col group cursor-pointer hover:border-primary/50 transition-all duration-300">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="p-3 bg-secondary rounded-lg group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                                <Folder className="h-6 w-6" />
-                            </div>
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${project.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                    <Link key={project.id} href={`/projects/${project.id}`}>
+                        <div className="glass-card rounded-xl p-6 flex flex-col group cursor-pointer hover:border-primary/50 transition-all duration-300">
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="p-3 bg-secondary rounded-lg group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                                    <Folder className="h-6 w-6" />
+                                </div>
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${project.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
                                     project.status === 'PLANNING' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
                                         'bg-gray-500/10 text-gray-500 border-gray-500/20'
-                                }`}>
-                                {project.status}
-                            </span>
-                        </div>
-
-                        <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">{project.name}</h3>
-                        <p className="text-sm text-muted-foreground mb-6 line-clamp-2">{project.description}</p>
-
-                        <div className="mt-auto pt-4 border-t border-dashed border-white/10 flex items-center justify-between text-sm text-muted-foreground">
-                            <div className="flex items-center">
-                                <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                                {project.completedTaskCount}/{project.taskCount} Tasks
+                                    }`}>
+                                    {project.status}
+                                </span>
                             </div>
-                            <div className="flex items-center">
-                                <Clock className="h-4 w-4 mr-1.5" />
-                                {new Date(project.createdAt).toLocaleDateString()}
+
+                            <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">{project.name}</h3>
+                            <p className="text-sm text-muted-foreground mb-6 line-clamp-2">{project.description}</p>
+
+                            <div className="mt-auto pt-4 border-t border-dashed border-white/10 flex items-center justify-between text-sm text-muted-foreground">
+                                <div className="flex items-center">
+                                    <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                                    {project.completedTaskCount}/{project.taskCount} Tasks
+                                </div>
+                                <div className="flex items-center">
+                                    <Clock className="h-4 w-4 mr-1.5" />
+                                    {new Date(project.createdAt).toLocaleDateString()}
+                                </div>
+                            </div>
+                            {/* Progress bar */}
+                            <div className="mt-4 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                                    style={{ width: `${(project.completedTaskCount / project.taskCount) * 100}%` }}
+                                />
                             </div>
                         </div>
-                        {/* Progress bar */}
-                        <div className="mt-4 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                                style={{ width: `${(project.completedTaskCount / project.taskCount) * 100}%` }}
-                            />
-                        </div>
-                    </div>
+                    </Link>
                 ))}
             </div>
         </div>

@@ -14,6 +14,14 @@ export interface Project {
     completedTaskCount: number;
 }
 
+export interface Artifact {
+    id: string;
+    name: string;
+    type: 'CODE' | 'DOCUMENT' | 'IMAGE' | 'ARCHIVE';
+    url: string;
+    createdAt: string;
+}
+
 export interface Task {
     id: string;
     projectId: string;
@@ -23,6 +31,9 @@ export interface Task {
     assignedAgentId?: string;
     priority: 'LOW' | 'MEDIUM' | 'HIGH';
     deadline?: string;
+    startDate?: string;
+    endDate?: string;
+    artifacts?: Artifact[];
 }
 
 export interface Agent {
