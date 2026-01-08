@@ -17,7 +17,7 @@ export function ViewSwitcher({ currentView, onViewChange }: ViewSwitcherProps) {
         { id: 'TIMELINE', label: 'Timeline', icon: Calendar },
         { id: 'ARTIFACTS', label: 'Artifacts', icon: Box },
         { id: 'REVIEWS', label: 'Reviews', icon: MessageSquare },
-        { id: 'GRAPH', label: 'Workflow', icon: Network },
+        { id: 'GRAPH', label: 'Graph', icon: Network },
     ];
 
     return (
