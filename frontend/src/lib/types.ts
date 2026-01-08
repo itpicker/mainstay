@@ -62,6 +62,7 @@ export interface Project {
     description: string;
     status: ProjectStatus;
     lifecycle: ProjectLifecycle; // New field
+    workflowStage?: 'REQUIREMENTS' | 'ARCHITECTURE' | 'DESIGN' | 'IMPLEMENTATION' | 'REVIEW' | 'COMPLETED'; // Workflow Engine Stage
     isPlanningFrozen: boolean;   // New field
     planningFrozenAt?: string;   // New field
     createdAt: string;
@@ -74,8 +75,17 @@ export interface Project {
 export interface Artifact {
     id: string;
     name: string;
-    type: 'CODE' | 'DOCUMENT' | 'IMAGE' | 'ARCHIVE';
+    type: 'CODE' | 'DOCUMENT' | 'IMAGE' | 'ARCHIVE' | 'DEPLOYMENT';
     url: string;
+    status: 'PENDING' | 'READY' | 'DEPLOYED' | 'FAILED' | 'OFFLINE' | 'ONLINE'; // Extended statuses
+    metadata?: {
+        version?: string;
+        branch?: string;
+        commitHash?: string;
+        environment?: 'STAGING' | 'PRODUCTION';
+        testStatus?: 'PASS' | 'FAIL' | 'UNTESTED';
+        [key: string]: any;
+    };
     createdAt: string;
 }
 

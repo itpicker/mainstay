@@ -30,8 +30,10 @@ const mockProject: Project = {
     name: 'Website Redesign',
     description: 'Overhaul of the corporate website with new branding.',
     status: 'ACTIVE',
-    lifecycle: 'PLANNING', // Initial state
-    isPlanningFrozen: false,
+    lifecycle: 'EXECUTION', // Initial state
+    workflowStage: 'IMPLEMENTATION', // Testing Workflow Visualizer
+    isPlanningFrozen: true,
+    planningFrozenAt: '2025-12-05T10:00:00Z',
     createdAt: '2025-12-01',
     taskCount: 3,
     completedTaskCount: 1,
@@ -50,16 +52,16 @@ const initialTasks: Task[] = [
         assignedAgentId: '4',
         startDate: '2025-12-01',
         endDate: '2025-12-05',
-        artifacts: [
-            { id: 'a1', name: 'brand_guidelines.pdf', type: 'DOCUMENT', url: '#', createdAt: '2025-12-05' },
-            { id: 'a2', name: 'logo_assets.zip', type: 'ARCHIVE', url: '#', createdAt: '2025-12-04' }
-        ],
         subtasks: [
             { id: 's1', title: 'Research competitors', completed: true },
             { id: 's2', title: 'Draft color palette', completed: true },
             { id: 's3', title: 'Select typography', completed: true },
         ],
-        activeReviewRequestId: 'rev-1' // Linked to Brand Guidelines PDF Review
+        activeReviewRequestId: 'rev-1', // Linked to Brand Guidelines PDF Review
+        artifacts: [
+            { id: 'a1', name: 'brand_guidelines.pdf', type: 'DOCUMENT', url: '#', createdAt: '2025-12-05', status: 'READY' },
+            { id: 'a2', name: 'logo_assets.zip', type: 'ARCHIVE', url: '#', createdAt: '2025-12-04', status: 'READY' }
+        ],
     },
     {
         id: '102',
@@ -71,15 +73,22 @@ const initialTasks: Task[] = [
         assignedAgentId: '2',
         startDate: '2025-12-06',
         endDate: '2025-12-20',
-        artifacts: [
-            { id: 'a3', name: 'homepage_component.tsx', type: 'CODE', url: '#', createdAt: '2025-12-10' }
-        ],
         subtasks: [
             { id: 's4', title: 'Setup layout', completed: true },
             { id: 's5', title: 'Implement hero section', completed: false },
             { id: 's6', title: 'Add responsive styles', completed: false },
         ],
-        activeReviewRequestId: 'rev-2' // Linked to Database Architecture Decision
+        activeReviewRequestId: 'rev-2', // Linked to Database Architecture Decision
+        artifacts: [
+            {
+                id: 'a3', name: 'homepage_component.tsx', type: 'CODE', url: '#', createdAt: '2025-12-10',
+                status: 'READY', metadata: { branch: 'feat/home-page', commitHash: '8a2b9f1' }
+            },
+            {
+                id: 'a4', name: 'Staging Deployment', type: 'DEPLOYMENT', url: 'https://staging.example.com', createdAt: '2025-12-11',
+                status: 'ONLINE', metadata: { environment: 'STAGING', version: 'v1.0.2-beta', testStatus: 'PASS' }
+            }
+        ],
     },
     {
         id: '103',
