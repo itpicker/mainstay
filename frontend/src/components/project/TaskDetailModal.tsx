@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, CheckSquare, Square, Trash2, Calendar, UserCircle, Paperclip } from 'lucide-react';
+import { X, CheckSquare, Square, Trash2, Calendar, UserCircle, Paperclip, Edit2, Check } from 'lucide-react';
 import { Task, Agent } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ProjectArtifacts } from './ProjectArtifacts';
@@ -18,20 +18,23 @@ export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents }: Tas
     const [currentTask, setCurrentTask] = useState<Task | null>(task);
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
 
+    // Subtask Editing State
+    const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
+    const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('');
+
     useEffect(() => {
         setCurrentTask(task);
     }, [task]);
 
     if (!isOpen || !currentTask) return null;
 
+    // --- Subtask Handlers ---
     const handleToggleSubtask = (subtaskId: string) => {
         if (!currentTask.subtasks) return;
         const updatedSubtasks = currentTask.subtasks.map(st =>
             st.id === subtaskId ? { ...st, completed: !st.completed } : st
         );
-        const updatedTask = { ...currentTask, subtasks: updatedSubtasks };
-        setCurrentTask(updatedTask);
-        onUpdate(updatedTask);
+        updateTask({ ...currentTask, subtasks: updatedSubtasks });
     };
 
     const handleAddSubtask = (e: React.FormEvent) => {
@@ -45,17 +48,38 @@ export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents }: Tas
         };
 
         const updatedSubtasks = [...(currentTask.subtasks || []), newSubtask];
-        const updatedTask = { ...currentTask, subtasks: updatedSubtasks };
-        setCurrentTask(updatedTask);
-        onUpdate(updatedTask);
+        updateTask({ ...currentTask, subtasks: updatedSubtasks });
         setNewSubtaskTitle('');
     };
 
     const handleDeleteSubtask = (subtaskId: string) => {
         const updatedSubtasks = (currentTask.subtasks || []).filter(st => st.id !== subtaskId);
-        const updatedTask = { ...currentTask, subtasks: updatedSubtasks };
-        setCurrentTask(updatedTask);
-        onUpdate(updatedTask);
+        updateTask({ ...currentTask, subtasks: updatedSubtasks });
+    };
+
+    const handleStartEditSubtask = (subtask: { id: string, title: string }) => {
+        setEditingSubtaskId(subtask.id);
+        setEditingSubtaskTitle(subtask.title);
+    };
+
+    const handleSaveEditSubtask = () => {
+        if (!editingSubtaskId || !editingSubtaskTitle.trim()) return;
+
+        const updatedSubtasks = (currentTask.subtasks || []).map(st =>
+            st.id === editingSubtaskId ? { ...st, title: editingSubtaskTitle } : st
+        );
+        updateTask({ ...currentTask, subtasks: updatedSubtasks });
+        setEditingSubtaskId(null);
+    };
+
+    // --- Priority Handler ---
+    const handlePriorityChange = (priority: 'LOW' | 'MEDIUM' | 'HIGH') => {
+        updateTask({ ...currentTask, priority });
+    };
+
+    const updateTask = (updated: Task) => {
+        setCurrentTask(updated);
+        onUpdate(updated);
     };
 
     const completedCount = (currentTask.subtasks || []).filter(st => st.completed).length;
@@ -73,9 +97,11 @@ export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents }: Tas
                         <div className="space-y-1">
                             <div className="flex items-center gap-3 mb-2">
                                 <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-bold border",
-                                    currentTask.status === 'TODO' ? 'bg-slate-500/10 text-slate-500 border-slate-500/20' :
-                                        currentTask.status === 'IN_PROGRESS' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                            currentTask.status === 'REVIEW' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' : 'bg-green-500/10 text-green-500 border-green-500/20'
+                                    currentTask.status === 'todo' ? 'bg-slate-500/10 text-slate-500 border-slate-500/20' :
+                                        currentTask.status === 'in_progress' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                            currentTask.status === 'review' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' :
+                                                currentTask.status === 'done' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                                    'bg-white/10 text-muted-foreground border-white/20'
                                 )}>
                                     {currentTask.status.replace('_', ' ')}
                                 </span>
@@ -123,15 +149,41 @@ export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents }: Tas
                                         >
                                             {subtask.completed ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
                                         </button>
-                                        <span className={cn("flex-1 text-sm pt-0.5", subtask.completed && "text-muted-foreground line-through decoration-white/20")}>
-                                            {subtask.title}
-                                        </span>
-                                        <button
-                                            onClick={() => handleDeleteSubtask(subtask.id)}
-                                            className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-red-500 transition-all"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
+
+                                        <div className="flex-1 min-w-0">
+                                            {editingSubtaskId === subtask.id ? (
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        autoFocus
+                                                        className="w-full bg-black/20 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                                                        value={editingSubtaskTitle}
+                                                        onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleSaveEditSubtask()}
+                                                    />
+                                                    <button onClick={handleSaveEditSubtask} className="hover:text-green-500"><Check className="h-4 w-4" /></button>
+                                                    <button onClick={() => setEditingSubtaskId(null)} className="hover:text-red-500"><X className="h-4 w-4" /></button>
+                                                </div>
+                                            ) : (
+                                                <span className={cn("text-sm", subtask.completed && "text-muted-foreground line-through decoration-white/20")}>
+                                                    {subtask.title}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => handleStartEditSubtask(subtask)}
+                                                className="p-1.5 text-muted-foreground hover:text-foreground transition-all"
+                                            >
+                                                <Edit2 className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteSubtask(subtask.id)}
+                                                className="p-1.5 text-muted-foreground hover:text-red-500 transition-all"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
 
@@ -149,7 +201,7 @@ export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents }: Tas
                             </div>
                         </div>
 
-                        {/* Artifacts Preview (Reusing component strictly for view) */}
+                        {/* Artifacts Preview */}
                         <div>
                             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
                                 <Paperclip className="h-4 w-4" /> Attached Artifacts
@@ -202,11 +254,22 @@ export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents }: Tas
                     {/* Priority */}
                     <div className="space-y-2">
                         <label className="text-xs font-semibold text-muted-foreground uppercase">Priority</label>
-                        <div className={cn("inline-flex px-3 py-1 rounded-full text-xs font-bold border",
-                            currentTask.priority === 'HIGH' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                                currentTask.priority === 'MEDIUM' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-                        )}>
-                            {currentTask.priority} Priority
+                        <div className="flex gap-2">
+                            {['LOW', 'MEDIUM', 'HIGH'].map((level) => (
+                                <button
+                                    key={level}
+                                    onClick={() => handlePriorityChange(level as any)}
+                                    className={cn("flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                                        currentTask.priority === level
+                                            ? level === 'HIGH' ? 'bg-red-500/20 text-red-500 border-red-500/50'
+                                                : level === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/50'
+                                                    : 'bg-blue-500/20 text-blue-500 border-blue-500/50'
+                                            : "bg-white/5 text-muted-foreground border-white/5 hover:bg-white/10"
+                                    )}
+                                >
+                                    {level}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>

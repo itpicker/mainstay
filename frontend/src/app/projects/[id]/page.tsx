@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Play } from 'lucide-react';
 import Link from 'next/link';
-import { Task, Agent, Project, TaskStatus } from '@/lib/types';
+import { Task, Agent, Project, ProjectStage, TaskStatus } from '@/lib/types';
 import { useParams } from 'next/navigation';
 import { ProjectKanban } from '@/components/project/ProjectKanban';
 import { ViewSwitcher, ProjectView } from '@/components/project/ViewSwitcher';
@@ -13,6 +13,13 @@ import { ProjectArtifacts } from '@/components/project/ProjectArtifacts';
 import { CreateTaskModal } from '@/components/project/CreateTaskModal';
 import { TaskDetailModal } from '@/components/project/TaskDetailModal';
 
+const initialStages: ProjectStage[] = [
+    { id: 'todo', name: 'To Do', color: 'bg-slate-500' },
+    { id: 'in_progress', name: 'In Progress', color: 'bg-blue-500' },
+    { id: 'review', name: 'Review', color: 'bg-purple-500' },
+    { id: 'done', name: 'Done', color: 'bg-green-500' },
+];
+
 const mockProject: Project = {
     id: '1',
     name: 'Website Redesign',
@@ -21,6 +28,7 @@ const mockProject: Project = {
     createdAt: '2025-12-01',
     taskCount: 3,
     completedTaskCount: 1,
+    stages: initialStages
 };
 
 // Updated Mock Tasks with dates and artifacts
@@ -30,7 +38,7 @@ const initialTasks: Task[] = [
         projectId: '1',
         title: 'Define Brand Guidelines',
         description: 'Create color palette and typography.',
-        status: 'DONE',
+        status: 'done',
         priority: 'HIGH',
         assignedAgentId: '4',
         startDate: '2025-12-01',
@@ -50,7 +58,7 @@ const initialTasks: Task[] = [
         projectId: '1',
         title: 'Develop Home Page',
         description: 'Implement the landing page in Next.js.',
-        status: 'IN_PROGRESS',
+        status: 'in_progress',
         priority: 'HIGH',
         assignedAgentId: '2',
         startDate: '2025-12-06',
@@ -69,7 +77,7 @@ const initialTasks: Task[] = [
         projectId: '1',
         title: 'Write Content',
         description: 'Draft copy for the about page.',
-        status: 'TODO',
+        status: 'todo',
         priority: 'MEDIUM',
         startDate: '2025-12-21',
         endDate: '2025-12-25',
@@ -86,9 +94,10 @@ const mockAgents: Agent[] = [
 
 export default function ProjectDetailsPage() {
     const [tasks, setTasks] = useState(initialTasks);
+    const [stages, setStages] = useState(initialStages);
     const [view, setView] = useState<ProjectView>('KANBAN');
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-    const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>('TODO');
+    const [newTaskStatus, setNewTaskStatus] = useState<string>('todo');
 
     // New state for task details
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -100,7 +109,29 @@ export default function ProjectDetailsPage() {
         setTasks(tasks.map(t => t.id === taskId ? { ...t, assignedAgentId: agentId } : t));
     };
 
-    const openCreateTaskModal = (status: TaskStatus = 'TODO') => {
+    // Stage Management Handlers
+    const handleAddStage = (name: string) => {
+        const newStage: ProjectStage = {
+            id: name.toLowerCase().replace(/\s+/g, '_'),
+            name: name,
+            color: 'bg-slate-500' // Default color
+        };
+        setStages([...stages, newStage]);
+    };
+
+    const handleUpdateStage = (stageId: string, newName: string) => {
+        setStages(stages.map(s => s.id === stageId ? { ...s, name: newName } : s));
+    };
+
+    const handleDeleteStage = (stageId: string) => {
+        setStages(stages.filter(s => s.id !== stageId));
+    };
+
+    const handleTaskMove = (taskId: string, newStatus: string) => {
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    };
+
+    const openCreateTaskModal = (status: string = 'todo') => {
         setNewTaskStatus(status);
         setIsTaskModalOpen(true);
     };
@@ -193,16 +224,25 @@ export default function ProjectDetailsPage() {
                     <ProjectKanban
                         tasks={tasks}
                         agents={mockAgents}
+                        stages={stages}
                         onAssign={handleAssign}
                         onCreateTask={openCreateTaskModal}
                         onTaskClick={openTaskDetail}
+                        onAddStage={handleAddStage}
+                        onUpdateStage={handleUpdateStage}
+                        onDeleteStage={handleDeleteStage}
+                        onMoveTask={handleTaskMove}
                     />
                 )}
                 {view === 'TABLE' && (
                     <ProjectTable
                         tasks={tasks}
                         agents={mockAgents}
+                        stages={stages}
                         onTaskClick={openTaskDetail}
+                        onCreateTask={openCreateTaskModal}
+                        onUpdateStage={handleUpdateStage}
+                        onDeleteStage={handleDeleteStage}
                     />
                 )}
                 {view === 'TIMELINE' && (

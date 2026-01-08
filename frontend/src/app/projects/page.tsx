@@ -5,6 +5,13 @@ import Link from 'next/link';
 import { Project } from '@/lib/types';
 
 // Mock data
+const defaultStages = [
+    { id: 'todo', name: 'To Do', color: 'bg-slate-500' },
+    { id: 'in_progress', name: 'In Progress', color: 'bg-blue-500' },
+    { id: 'review', name: 'Review', color: 'bg-purple-500' },
+    { id: 'done', name: 'Done', color: 'bg-green-500' },
+];
+
 const mockProjects: Project[] = [
     {
         id: '1',
@@ -14,6 +21,7 @@ const mockProjects: Project[] = [
         createdAt: '2025-12-01',
         taskCount: 12,
         completedTaskCount: 5,
+        stages: defaultStages
     },
     {
         id: '2',
@@ -23,6 +31,7 @@ const mockProjects: Project[] = [
         createdAt: '2026-01-05',
         taskCount: 8,
         completedTaskCount: 0,
+        stages: defaultStages
     },
     {
         id: '3',
@@ -32,6 +41,7 @@ const mockProjects: Project[] = [
         createdAt: '2025-11-15',
         taskCount: 20,
         completedTaskCount: 20,
+        stages: defaultStages
     },
 ];
 

@@ -1,7 +1,13 @@
 export type ProjectStatus = 'ACTIVE' | 'ARCHIVED' | 'COMPLETED' | 'PLANNING';
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+export type TaskStatus = string;
 export type AgentStatus = 'IDLE' | 'BUSY' | 'OFFLINE';
 export type AgentRole = 'RESEARCHER' | 'DEVELOPER' | 'DESIGNER' | 'REVIEWER' | 'MANAGER';
+
+export interface ProjectStage {
+    id: string;
+    name: string;
+    color: string;
+}
 
 export interface Project {
     id: string;
@@ -12,6 +18,7 @@ export interface Project {
     deadline?: string;
     taskCount: number;
     completedTaskCount: number;
+    stages: ProjectStage[];
 }
 
 export interface Artifact {
