@@ -34,6 +34,11 @@ export interface Task {
     startDate?: string;
     endDate?: string;
     artifacts?: Artifact[];
+    subtasks?: {
+        id: string;
+        title: string;
+        completed: boolean;
+    }[];
 }
 
 export interface Agent {

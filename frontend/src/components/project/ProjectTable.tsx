@@ -7,9 +7,10 @@ import { UserCircle, Calendar } from 'lucide-react';
 interface ProjectTableProps {
     tasks: Task[];
     agents: Agent[];
+    onTaskClick: (task: Task) => void;
 }
 
-export function ProjectTable({ tasks, agents }: ProjectTableProps) {
+export function ProjectTable({ tasks, agents, onTaskClick }: ProjectTableProps) {
     return (
         <div className="flex-1 overflow-auto rounded-lg border border-white/5 glass-card">
             <table className="w-full text-left text-sm">
@@ -24,7 +25,11 @@ export function ProjectTable({ tasks, agents }: ProjectTableProps) {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                     {tasks.map((task) => (
-                        <tr key={task.id} className="hover:bg-white/5 transition-colors group">
+                        <tr
+                            key={task.id}
+                            onClick={() => onTaskClick(task)}
+                            className="hover:bg-white/5 transition-colors group cursor-pointer"
+                        >
                             <td className="px-4 py-3">
                                 <div className="font-medium text-foreground">{task.title}</div>
                                 <div className="text-xs text-muted-foreground line-clamp-1">{task.description}</div>

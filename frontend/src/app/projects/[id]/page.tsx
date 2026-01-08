@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import { ArrowLeft, Play } from 'lucide-react';
 import Link from 'next/link';
-import { Task, Agent, Project } from '@/lib/types';
+import { Task, Agent, Project, TaskStatus } from '@/lib/types';
 import { useParams } from 'next/navigation';
 import { ProjectKanban } from '@/components/project/ProjectKanban';
 import { ViewSwitcher, ProjectView } from '@/components/project/ViewSwitcher';
 import { ProjectTable } from '@/components/project/ProjectTable';
 import { ProjectTimeline } from '@/components/project/ProjectTimeline';
 import { ProjectArtifacts } from '@/components/project/ProjectArtifacts';
+import { CreateTaskModal } from '@/components/project/CreateTaskModal';
+import { TaskDetailModal } from '@/components/project/TaskDetailModal';
 
 const mockProject: Project = {
     id: '1',
@@ -36,6 +38,11 @@ const initialTasks: Task[] = [
         artifacts: [
             { id: 'a1', name: 'brand_guidelines.pdf', type: 'DOCUMENT', url: '#', createdAt: '2025-12-05' },
             { id: 'a2', name: 'logo_assets.zip', type: 'ARCHIVE', url: '#', createdAt: '2025-12-04' }
+        ],
+        subtasks: [
+            { id: 's1', title: 'Research competitors', completed: true },
+            { id: 's2', title: 'Draft color palette', completed: true },
+            { id: 's3', title: 'Select typography', completed: true },
         ]
     },
     {
@@ -50,6 +57,11 @@ const initialTasks: Task[] = [
         endDate: '2025-12-20',
         artifacts: [
             { id: 'a3', name: 'homepage_component.tsx', type: 'CODE', url: '#', createdAt: '2025-12-10' }
+        ],
+        subtasks: [
+            { id: 's4', title: 'Setup layout', completed: true },
+            { id: 's5', title: 'Implement hero section', completed: false },
+            { id: 's6', title: 'Add responsive styles', completed: false },
         ]
     },
     {
@@ -60,7 +72,8 @@ const initialTasks: Task[] = [
         status: 'TODO',
         priority: 'MEDIUM',
         startDate: '2025-12-21',
-        endDate: '2025-12-25'
+        endDate: '2025-12-25',
+        subtasks: []
     },
 ];
 
@@ -74,14 +87,78 @@ const mockAgents: Agent[] = [
 export default function ProjectDetailsPage() {
     const [tasks, setTasks] = useState(initialTasks);
     const [view, setView] = useState<ProjectView>('KANBAN');
+    const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+    const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>('TODO');
+
+    // New state for task details
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
     const params = useParams();
 
     const handleAssign = (taskId: string, agentId: string) => {
         setTasks(tasks.map(t => t.id === taskId ? { ...t, assignedAgentId: agentId } : t));
     };
 
+    const openCreateTaskModal = (status: TaskStatus = 'TODO') => {
+        setNewTaskStatus(status);
+        setIsTaskModalOpen(true);
+    };
+
+    const handleCreateTask = (taskData: {
+        title: string;
+        description: string;
+        priority: 'LOW' | 'MEDIUM' | 'HIGH';
+        assignedAgentId?: string;
+        subtasks?: { id: string; title: string; completed: boolean }[];
+        startDate?: string;
+        endDate?: string;
+    }) => {
+        const newTask: Task = {
+            id: Math.random().toString(36).substr(2, 9),
+            projectId: mockProject.id,
+            title: taskData.title,
+            description: taskData.description,
+            status: newTaskStatus,
+            priority: taskData.priority,
+            assignedAgentId: taskData.assignedAgentId,
+            startDate: taskData.startDate,
+            endDate: taskData.endDate,
+            subtasks: taskData.subtasks || [],
+            createdAt: new Date().toISOString()
+        } as any;
+
+        setTasks([...tasks, newTask]);
+    };
+
+    const openTaskDetail = (task: Task) => {
+        setSelectedTask(task);
+        setIsDetailModalOpen(true);
+    };
+
+    const handleTaskUpdate = (updatedTask: Task) => {
+        setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+        setSelectedTask(updatedTask);
+    };
+
     return (
         <div className="space-y-6 h-full flex flex-col">
+            <CreateTaskModal
+                isOpen={isTaskModalOpen}
+                onClose={() => setIsTaskModalOpen(false)}
+                onSave={handleCreateTask}
+                agents={mockAgents}
+                defaultStatus={newTaskStatus}
+            />
+
+            <TaskDetailModal
+                task={selectedTask}
+                isOpen={isDetailModalOpen}
+                onClose={() => setIsDetailModalOpen(false)}
+                onUpdate={handleTaskUpdate}
+                agents={mockAgents}
+            />
+
             {/* Header */}
             <div className="flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-4">
@@ -113,10 +190,20 @@ export default function ProjectDetailsPage() {
             {/* View Content */}
             <div className="flex-1 min-h-0 flex flex-col">
                 {view === 'KANBAN' && (
-                    <ProjectKanban tasks={tasks} agents={mockAgents} onAssign={handleAssign} />
+                    <ProjectKanban
+                        tasks={tasks}
+                        agents={mockAgents}
+                        onAssign={handleAssign}
+                        onCreateTask={openCreateTaskModal}
+                        onTaskClick={openTaskDetail}
+                    />
                 )}
                 {view === 'TABLE' && (
-                    <ProjectTable tasks={tasks} agents={mockAgents} />
+                    <ProjectTable
+                        tasks={tasks}
+                        agents={mockAgents}
+                        onTaskClick={openTaskDetail}
+                    />
                 )}
                 {view === 'TIMELINE' && (
                     <ProjectTimeline tasks={tasks} />

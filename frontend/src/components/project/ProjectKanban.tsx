@@ -8,9 +8,11 @@ interface ProjectKanbanProps {
     tasks: Task[];
     agents: Agent[];
     onAssign: (taskId: string, agentId: string) => void;
+    onCreateTask: (status: any) => void;
+    onTaskClick: (task: Task) => void;
 }
 
-export function ProjectKanban({ tasks, agents, onAssign }: ProjectKanbanProps) {
+export function ProjectKanban({ tasks, agents, onAssign, onCreateTask, onTaskClick }: ProjectKanbanProps) {
     return (
         <div className="flex-1 overflow-x-auto">
             <div className="flex gap-6 h-full min-w-max pb-4">
@@ -32,7 +34,11 @@ export function ProjectKanban({ tasks, agents, onAssign }: ProjectKanbanProps) {
 
                         <div className="flex-1 rounded-xl bg-white/5 p-3 space-y-3 overflow-y-auto max-h-[calc(100vh-250px)]">
                             {tasks.filter(t => t.status === status).map(task => (
-                                <div key={task.id} className="glass-card p-4 rounded-lg space-y-3 cursor-grab hover:border-primary/50 group">
+                                <div
+                                    key={task.id}
+                                    onClick={() => onTaskClick(task)}
+                                    className="glass-card p-4 rounded-lg space-y-3 cursor-grab hover:border-primary/50 group active:cursor-grabbing hover:bg-white/5 transition-colors"
+                                >
                                     <div className="flex justify-between items-start">
                                         <h4 className="font-medium text-sm leading-tight">{task.title}</h4>
                                         <button className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
@@ -81,7 +87,10 @@ export function ProjectKanban({ tasks, agents, onAssign }: ProjectKanbanProps) {
                                     </div>
                                 </div>
                             ))}
-                            <button className="w-full py-2 text-xs text-muted-foreground border border-dashed border-white/10 rounded-lg hover:bg-white/5 transition-colors flex items-center justify-center gap-2">
+                            <button
+                                onClick={() => onCreateTask(status)}
+                                className="w-full py-2 text-xs text-muted-foreground border border-dashed border-white/10 rounded-lg hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
+                            >
                                 <Plus className="h-3 w-3" /> New Task
                             </button>
                         </div>
