@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, CheckSquare, Square, Trash2, Calendar, UserCircle, Paperclip, Edit2, Check } from 'lucide-react';
-import { Task, Agent } from '@/lib/types';
+import { X, CheckSquare, Square, Trash2, Calendar, UserCircle, Paperclip, Edit2, Check, CheckCircle2, MessageSquare, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Task, Agent, ReviewRequest } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ProjectArtifacts } from './ProjectArtifacts';
 import { formatDate } from '@/lib/date';
+import { DecisionCard } from './DecisionCard';
 
 interface TaskDetailModalProps {
     task: Task | null;
@@ -13,9 +14,11 @@ interface TaskDetailModalProps {
     onClose: () => void;
     onUpdate: (updatedTask: Task) => void;
     agents: Agent[];
+    reviewRequests?: ReviewRequest[];
+    onReviewAction?: (id: string, action: 'APPROVED' | 'CHANGES_REQUESTED' | 'REJECTED', optionId?: string) => void;
 }
 
-export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents }: TaskDetailModalProps) {
+export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents, reviewRequests = [], onReviewAction }: TaskDetailModalProps) {
     const [currentTask, setCurrentTask] = useState<Task | null>(task);
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
 
@@ -109,6 +112,63 @@ export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents }: Tas
 
                 {/* Main Content */}
                 <div className="flex-1 flex flex-col min-w-0 bg-background/50">
+                    {/* Review Section */}
+                    {currentTask.activeReviewRequestId && (
+                        (() => {
+                            const request = reviewRequests.find(r => r.id === currentTask.activeReviewRequestId);
+                            if (!request) return null;
+
+                            return (
+                                <div className="bg-orange-500/5 border-b border-orange-500/20 p-6">
+                                    <div className="flex items-start gap-4 mb-4">
+                                        <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500 shrink-0">
+                                            {request.type === 'DECISION' ? <AlertTriangle className="h-5 w-5" /> : <Clock className="h-5 w-5" />}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-bold text-lg">Action Required: {request.title}</h3>
+                                                <span className="text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-bold uppercase">
+                                                    {request.type || 'Review'}
+                                                </span>
+                                            </div>
+                                            <p className="text-muted-foreground text-sm leading-relaxed">{request.description}</p>
+                                        </div>
+                                    </div>
+
+                                    {request.type === 'DECISION' ? (
+                                        <div className="bg-background rounded-xl border border-white/5 p-4">
+                                            <DecisionCard
+                                                request={request}
+                                                onSelectOption={(optionId) => onReviewAction?.(request.id, 'APPROVED', optionId)}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-3 pl-14">
+                                            <button
+                                                onClick={() => onReviewAction?.(request.id, 'APPROVED')}
+                                                className="flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-500 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-all font-medium text-sm"
+                                            >
+                                                <CheckCircle2 className="h-4 w-4" /> Approve
+                                            </button>
+                                            <button
+                                                onClick={() => onReviewAction?.(request.id, 'CHANGES_REQUESTED')}
+                                                className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 text-orange-500 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-all font-medium text-sm"
+                                            >
+                                                <MessageSquare className="h-4 w-4" /> Request Changes
+                                            </button>
+                                            <button
+                                                onClick={() => onReviewAction?.(request.id, 'REJECTED')}
+                                                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-all font-medium text-sm"
+                                            >
+                                                <XCircle className="h-4 w-4" /> Reject
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()
+                    )}
+
                     {/* Header */}
                     <div className="flex items-start justify-between p-6 border-b border-white/5">
                         <div className="space-y-1">

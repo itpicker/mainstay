@@ -146,7 +146,14 @@ export function ProjectTable({
                                         className="hover:bg-white/5 transition-colors group cursor-pointer"
                                     >
                                         <td className="px-4 py-3 pl-12"> {/* Indented */}
-                                            <div className="font-medium text-foreground">{task.title}</div>
+                                            <div className="font-medium text-foreground flex items-center gap-2">
+                                                {task.title}
+                                                {task.activeReviewRequestId && (
+                                                    <span className="text-[10px] bg-orange-500/10 text-orange-500 px-1.5 py-0.5 rounded border border-orange-500/20 font-bold whitespace-nowrap">
+                                                        REVIEW
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="text-xs text-muted-foreground line-clamp-1">{task.description}</div>
                                         </td>
                                         <td className="px-4 py-3">

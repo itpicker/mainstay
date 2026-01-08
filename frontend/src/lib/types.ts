@@ -18,6 +18,16 @@ export interface ChangeRequest {
     createdAt: string;
 }
 
+export interface DecisionOption {
+    id: string;
+    title: string;
+    description: string;
+    pros: string[];
+    cons: string[];
+    estimatedEffort: string;
+    cost: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+
 export interface ReviewRequest {
     id: string;
     taskId: string;
@@ -25,6 +35,9 @@ export interface ReviewRequest {
     title: string;
     description: string;
     status: ReviewStatus;
+    type?: 'APPROVAL' | 'DECISION'; // New field
+    options?: DecisionOption[];     // For DECISION type
+    selectedOptionId?: string;      // User choice
     artifacts: Artifact[];
     feedback?: string;
     createdAt: string;

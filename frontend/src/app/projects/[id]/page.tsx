@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { ArrowLeft, Play } from 'lucide-react';
 import Link from 'next/link';
-import { Task, Agent, Project, ProjectStage, TaskStatus } from '@/lib/types';
 import { useParams } from 'next/navigation';
+import { Task, Agent, Project, ProjectStage, TaskStatus, ReviewRequest, ChangeRequest } from '@/lib/types';
+import { mockPending, mockHistory, mockChanges } from '@/lib/mock-data';
 import { ProjectKanban } from '@/components/project/ProjectKanban';
 import { ViewSwitcher, ProjectView } from '@/components/project/ViewSwitcher';
 import { ProjectTable } from '@/components/project/ProjectTable';
@@ -57,7 +58,8 @@ const initialTasks: Task[] = [
             { id: 's1', title: 'Research competitors', completed: true },
             { id: 's2', title: 'Draft color palette', completed: true },
             { id: 's3', title: 'Select typography', completed: true },
-        ]
+        ],
+        activeReviewRequestId: 'rev-1' // Linked to Brand Guidelines PDF Review
     },
     {
         id: '102',
@@ -76,7 +78,8 @@ const initialTasks: Task[] = [
             { id: 's4', title: 'Setup layout', completed: true },
             { id: 's5', title: 'Implement hero section', completed: false },
             { id: 's6', title: 'Add responsive styles', completed: false },
-        ]
+        ],
+        activeReviewRequestId: 'rev-2' // Linked to Database Architecture Decision
     },
     {
         id: '103',
@@ -104,6 +107,7 @@ export default function ProjectDetailsPage() {
     const [view, setView] = useState<ProjectView>('TABLE');
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [newTaskStatus, setNewTaskStatus] = useState<string>('todo');
+    const [project, setProject] = useState(mockProject);
 
     // New state for task details
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -182,7 +186,32 @@ export default function ProjectDetailsPage() {
         setSelectedTask(updatedTask);
     };
 
-    const [project, setProject] = useState(mockProject);
+    // Review State (Lifted Up)
+    const [pendingRequests, setPendingRequests] = useState<ReviewRequest[]>(mockPending);
+    const [reviewHistory, setReviewHistory] = useState<ReviewRequest[]>(mockHistory);
+    const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>(mockChanges);
+
+    const handleReviewAction = (requestId: string, action: 'APPROVED' | 'CHANGES_REQUESTED' | 'REJECTED', optionId?: string) => {
+        const request = pendingRequests.find(r => r.id === requestId);
+        if (!request) return;
+
+        // Move to history
+        const updatedRequest = {
+            ...request,
+            status: action !== 'APPROVED' ? action : 'APPROVED' as const, // Fix type error
+            selectedOptionId: optionId,
+            feedback: optionId ? `Selected option: ${optionId}` : `Marked as ${action}`
+        };
+
+        setReviewHistory([updatedRequest, ...reviewHistory]);
+        setPendingRequests(pendingRequests.filter(r => r.id !== requestId));
+
+        // Update task status if needed
+        const task = tasks.find(t => t.activeReviewRequestId === requestId);
+        if (task) {
+            handleTaskUpdate({ ...task, activeReviewRequestId: undefined });
+        }
+    };
 
     const handleFreezePlanning = () => {
         setProject({
@@ -235,6 +264,8 @@ export default function ProjectDetailsPage() {
                     onClose={() => setIsDetailModalOpen(false)}
                     onUpdate={handleTaskUpdate}
                     agents={mockAgents}
+                    reviewRequests={pendingRequests}
+                    onReviewAction={handleReviewAction}
                 />
 
                 {/* Header */}
@@ -299,7 +330,14 @@ export default function ProjectDetailsPage() {
                         <ProjectArtifacts tasks={tasks} />
                     )}
                     {view === 'REVIEWS' && (
-                        <ProjectReviews projectId={project.id} agents={mockAgents} />
+                        <ProjectReviews
+                            projectId={project.id}
+                            agents={mockAgents}
+                            pendingRequests={pendingRequests}
+                            history={reviewHistory}
+                            changeRequests={changeRequests}
+                            onAction={handleReviewAction}
+                        />
                     )}
                 </div>
             </div>

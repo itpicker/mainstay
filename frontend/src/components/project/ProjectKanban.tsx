@@ -147,6 +147,12 @@ export function ProjectKanban({
                                             <MoreHorizontal className="h-4 w-4" />
                                         </button>
                                     </div>
+                                    {task.activeReviewRequestId && (
+                                        <div className="bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1.5 animate-pulse">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-bounce" />
+                                            WAITING FOR REVIEW
+                                        </div>
+                                    )}
                                     {task.description && <p className="text-xs text-muted-foreground line-clamp-2 select-none pointer-events-none">{task.description}</p>}
 
                                     <div className="flex items-center justify-between pt-2 border-t border-white/5">

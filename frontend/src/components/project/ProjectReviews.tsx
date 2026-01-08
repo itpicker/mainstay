@@ -1,75 +1,33 @@
+'use client';
+
 import { useState } from 'react';
 import { ReviewRequest, Agent, ChangeRequest } from '@/lib/types';
-import { CheckCircle2, MessageSquare, XCircle, FileText, ExternalLink, Clock, User, AlertTriangle, History } from 'lucide-react';
+import { CheckCircle2, MessageSquare, XCircle, FileText, ExternalLink, Clock, AlertTriangle, History } from 'lucide-react';
 import { formatDate } from '@/lib/date';
 import { cn } from '@/lib/utils';
+import { DecisionCard } from '@/components/project/DecisionCard';
 
 interface ProjectReviewsProps {
     projectId: string;
     agents: Agent[];
+    pendingRequests: ReviewRequest[];
+    history: ReviewRequest[];
+    changeRequests: ChangeRequest[];
+    onAction: (id: string, action: 'APPROVED' | 'CHANGES_REQUESTED' | 'REJECTED', optionId?: string) => void;
 }
 
-type ActiveTab = 'PENDING' | 'CHANGES' | 'HISTORY';
+type ActiveTab = 'reviews' | 'CHANGES' | 'HISTORY';
 
-// Mock History Data
-const mockHistory: ReviewRequest[] = [
-    {
-        id: 'rev-history-1',
-        taskId: '100',
-        projectId: '1',
-        title: 'Initial Project Plan',
-        description: 'Proposed project structure and timeline.',
-        status: 'APPROVED',
-        artifacts: [],
-        feedback: 'Looks good, let\'s proceed.',
-        createdAt: '2025-11-30T09:00:00Z'
-    }
-];
+export function ProjectReviews({ projectId, agents, pendingRequests, history, changeRequests, onAction }: ProjectReviewsProps) {
+    const [activeTab, setActiveTab] = useState<ActiveTab>('reviews');
 
-// Mock Pending Data (In a real app, this would come from props or API)
-const mockPending: ReviewRequest[] = [
-    {
-        id: 'rev-1',
-        taskId: '101',
-        projectId: '1',
-        title: 'Brand Guidelines PDF Review',
-        description: 'I have finalized the color palette and typography selections based on the competitor research. Please review the attached PDF.',
-        status: 'PENDING',
-        artifacts: [
-            { id: 'a1', name: 'mainstay_brand_guidelines_v1.pdf', type: 'DOCUMENT', url: '#', createdAt: '2025-12-05' }
-        ],
-        createdAt: '2025-12-05T14:00:00Z'
-    }
-];
-
-// Mock Change Requests
-const mockChanges: ChangeRequest[] = [
-    {
-        id: 'cr-1',
-        projectId: '1',
-        title: 'Add Social Login',
-        description: 'User wants to add Google and Apple login support.',
-        impactAnalysis: 'Low impact on timeline, but requires new API keys.',
-        status: 'PENDING',
-        requestedBy: 'USER',
-        createdAt: '2025-12-10T10:00:00Z'
-    }
-];
-
-export function ProjectReviews({ projectId, agents }: ProjectReviewsProps) {
-    const [activeTab, setActiveTab] = useState<ActiveTab>('PENDING');
-    const [pendingRequests, setPendingRequests] = useState<ReviewRequest[]>(mockPending);
-    const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>(mockChanges);
-    const [history, setHistory] = useState<ReviewRequest[]>(mockHistory);
+    // Helper to request option selection
+    const handleSelectOption = (requestId: string, optionId: string) => {
+        onAction(requestId, 'APPROVED', optionId);
+    };
 
     const handleAction = (id: string, action: 'APPROVED' | 'CHANGES_REQUESTED' | 'REJECTED') => {
-        const request = pendingRequests.find(r => r.id === id);
-        if (!request) return;
-
-        // Move to history
-        const updatedRequest = { ...request, status: action, feedback: 'Auto-generated feedback for demo' };
-        setHistory([updatedRequest, ...history]);
-        setPendingRequests(pendingRequests.filter(r => r.id !== id));
+        onAction(id, action);
     };
 
     return (
@@ -77,9 +35,9 @@ export function ProjectReviews({ projectId, agents }: ProjectReviewsProps) {
             {/* Tabs */}
             <div className="flex items-center gap-1 p-1 bg-secondary/30 rounded-lg w-fit">
                 <button
-                    onClick={() => setActiveTab('PENDING')}
+                    onClick={() => setActiveTab('reviews')}
                     className={cn("px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
-                        activeTab === 'PENDING' ? "bg-secondary text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-white/5")}
+                        activeTab === 'reviews' ? "bg-secondary text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-white/5")}
                 >
                     <MessageSquare className="h-4 w-4" />
                     Reviews
@@ -109,7 +67,7 @@ export function ProjectReviews({ projectId, agents }: ProjectReviewsProps) {
             </div>
 
             {/* Content: Reviews */}
-            {activeTab === 'PENDING' && (
+            {activeTab === 'reviews' && (
                 <div className="space-y-4">
                     {pendingRequests.length === 0 ? (
                         <div className="text-center py-12 border border-dashed rounded-xl bg-muted/30">
@@ -118,49 +76,58 @@ export function ProjectReviews({ projectId, agents }: ProjectReviewsProps) {
                         </div>
                     ) : (
                         pendingRequests.map((req) => (
-                            <div key={req.id} className="glass-card p-6 rounded-xl border border-border/50 hover:border-orange-500/30 transition-all">
-                                <div className="flex flex-col md:flex-row gap-6">
-                                    <div className="flex-1 space-y-3">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-500 border border-orange-500/20">
-                                                Review Required
-                                            </span>
-                                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                <Clock className="h-3 w-3" />
-                                                {formatDate(req.createdAt)}
-                                            </span>
-                                        </div>
-
-                                        <div>
-                                            <h3 className="text-xl font-semibold">{req.title}</h3>
-                                            <p className="text-muted-foreground mt-1 text-sm leading-relaxed">{req.description}</p>
-                                        </div>
-
-                                        {req.artifacts.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 pt-2">
-                                                {req.artifacts.map((artifact) => (
-                                                    <a key={artifact.id} href={artifact.url} className="flex items-center gap-2 px-3 py-1.5 bg-secondary/50 rounded-lg text-sm hover:bg-secondary transition-colors text-foreground/80">
-                                                        <FileText className="h-4 w-4 text-primary" />
-                                                        {artifact.name}
-                                                    </a>
-                                                ))}
+                            req.type === 'DECISION' ? (
+                                <div key={req.id} className="glass-card p-6 rounded-xl border border-purple-500/20 bg-purple-500/5 hover:border-purple-500/40 transition-all">
+                                    <DecisionCard
+                                        request={req}
+                                        onSelectOption={(optionId) => handleSelectOption(req.id, optionId)}
+                                    />
+                                </div>
+                            ) : (
+                                <div key={req.id} className="glass-card p-6 rounded-xl border border-border/50 hover:border-orange-500/30 transition-all">
+                                    <div className="flex flex-col md:flex-row gap-6">
+                                        <div className="flex-1 space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-500 border border-orange-500/20">
+                                                    Review Required
+                                                </span>
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                    <Clock className="h-3 w-3" />
+                                                    {formatDate(req.createdAt)}
+                                                </span>
                                             </div>
-                                        )}
-                                    </div>
 
-                                    <div className="flex md:flex-col gap-2 md:w-40 shrink-0 md:border-l md:pl-6 border-white/10 justify-center md:justify-start">
-                                        <button onClick={() => handleAction(req.id, 'APPROVED')} className="btn-approve flex items-center justify-center gap-2 px-4 py-2 bg-green-500/10 text-green-500 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors text-sm font-medium">
-                                            <CheckCircle2 className="h-4 w-4" /> Approve
-                                        </button>
-                                        <button onClick={() => handleAction(req.id, 'CHANGES_REQUESTED')} className="btn-change flex items-center justify-center gap-2 px-4 py-2 bg-orange-500/10 text-orange-500 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors text-sm font-medium">
-                                            <MessageSquare className="h-4 w-4" /> Changes
-                                        </button>
-                                        <button onClick={() => handleAction(req.id, 'REJECTED')} className="btn-reject flex items-center justify-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors text-sm font-medium">
-                                            <XCircle className="h-4 w-4" /> Reject
-                                        </button>
+                                            <div>
+                                                <h3 className="text-xl font-semibold">{req.title}</h3>
+                                                <p className="text-muted-foreground mt-1 text-sm leading-relaxed">{req.description}</p>
+                                            </div>
+
+                                            {req.artifacts.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 pt-2">
+                                                    {req.artifacts.map((artifact) => (
+                                                        <a key={artifact.id} href={artifact.url} className="flex items-center gap-2 px-3 py-1.5 bg-secondary/50 rounded-lg text-sm hover:bg-secondary transition-colors text-foreground/80">
+                                                            <FileText className="h-4 w-4 text-primary" />
+                                                            {artifact.name}
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex md:flex-col gap-2 md:w-40 shrink-0 md:border-l md:pl-6 border-white/10 justify-center md:justify-start">
+                                            <button onClick={() => handleAction(req.id, 'APPROVED')} className="btn-approve flex items-center justify-center gap-2 px-4 py-2 bg-green-500/10 text-green-500 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-colors text-sm font-medium">
+                                                <CheckCircle2 className="h-4 w-4" /> Approve
+                                            </button>
+                                            <button onClick={() => handleAction(req.id, 'CHANGES_REQUESTED')} className="btn-change flex items-center justify-center gap-2 px-4 py-2 bg-orange-500/10 text-orange-500 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-colors text-sm font-medium">
+                                                <MessageSquare className="h-4 w-4" /> Changes
+                                            </button>
+                                            <button onClick={() => handleAction(req.id, 'REJECTED')} className="btn-reject flex items-center justify-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors text-sm font-medium">
+                                                <XCircle className="h-4 w-4" /> Reject
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )
                         ))
                     )}
                 </div>
@@ -222,9 +189,10 @@ export function ProjectReviews({ projectId, agents }: ProjectReviewsProps) {
                 <div className="space-y-3">
                     {history.map((req) => (
                         <div key={req.id} className="group flex items-start gap-4 p-4 rounded-lg hover:bg-secondary/30 transition-colors border border-transparent hover:border-border/30">
-                            <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${req.status === 'APPROVED' ? 'bg-green-500' :
-                                req.status === 'REJECTED' ? 'bg-red-500' : 'bg-orange-500'
-                                }`} />
+                            <div className={cn("mt-1 h-2 w-2 rounded-full shrink-0",
+                                req.status === 'APPROVED' ? 'bg-green-500' :
+                                    req.status === 'REJECTED' ? 'bg-red-500' : 'bg-orange-500'
+                            )} />
 
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between gap-4">
@@ -234,10 +202,11 @@ export function ProjectReviews({ projectId, agents }: ProjectReviewsProps) {
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border uppercase font-semibold ${req.status === 'APPROVED' ? 'bg-green-500/5 text-green-500 border-green-500/20' :
-                                        req.status === 'REJECTED' ? 'bg-red-500/5 text-red-500 border-red-500/20' :
-                                            'bg-orange-500/5 text-orange-500 border-orange-500/20'
-                                        }`}>
+                                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded border uppercase font-semibold",
+                                        req.status === 'APPROVED' ? 'bg-green-500/5 text-green-500 border-green-500/20' :
+                                            req.status === 'REJECTED' ? 'bg-red-500/5 text-red-500 border-red-500/20' :
+                                                'bg-orange-500/5 text-orange-500 border-orange-500/20'
+                                    )}>
                                         {req.status.replace('_', ' ')}
                                     </span>
                                     <span className="text-sm text-muted-foreground line-clamp-1">
