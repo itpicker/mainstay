@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, CheckSquare, Square, Trash2, Calendar, UserCircle, Paperclip, Edit2, Check, CheckCircle2, MessageSquare, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { X, CheckSquare, Square, Trash2, Calendar, UserCircle, Paperclip, Edit2, Check, CheckCircle2, MessageSquare, XCircle, Clock, AlertTriangle, FileText, ExternalLink } from 'lucide-react';
 import { Task, Agent, ReviewRequest } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ProjectArtifacts } from './ProjectArtifacts';
 import { formatDate } from '@/lib/date';
-import { DecisionCard } from './DecisionCard';
+import { ReviewInteractionModal } from './ReviewInteractionModal';
 
 interface TaskDetailModalProps {
     task: Task | null;
@@ -21,6 +21,7 @@ interface TaskDetailModalProps {
 export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents, reviewRequests = [], onReviewAction }: TaskDetailModalProps) {
     const [currentTask, setCurrentTask] = useState<Task | null>(task);
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+    const [isReviewOpen, setIsReviewOpen] = useState(false);
 
     // Subtask Editing State
     const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
@@ -108,67 +109,9 @@ export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents, revie
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-card w-full max-w-4xl h-[85vh] rounded-xl border border-white/10 shadow-2xl flex overflow-hidden glass-card">
+            <div className="bg-card w-full max-w-5xl h-[85vh] rounded-xl border border-white/10 shadow-2xl flex overflow-hidden glass-card">
 
-                {/* Main Content */}
                 <div className="flex-1 flex flex-col min-w-0 bg-background/50">
-                    {/* Review Section */}
-                    {currentTask.activeReviewRequestId && (
-                        (() => {
-                            const request = reviewRequests.find(r => r.id === currentTask.activeReviewRequestId);
-                            if (!request) return null;
-
-                            return (
-                                <div className="bg-orange-500/5 border-b border-orange-500/20 p-6">
-                                    <div className="flex items-start gap-4 mb-4">
-                                        <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500 shrink-0">
-                                            {request.type === 'DECISION' ? <AlertTriangle className="h-5 w-5" /> : <Clock className="h-5 w-5" />}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-bold text-lg">Action Required: {request.title}</h3>
-                                                <span className="text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-bold uppercase">
-                                                    {request.type || 'Review'}
-                                                </span>
-                                            </div>
-                                            <p className="text-muted-foreground text-sm leading-relaxed">{request.description}</p>
-                                        </div>
-                                    </div>
-
-                                    {request.type === 'DECISION' ? (
-                                        <div className="bg-background rounded-xl border border-white/5 p-4">
-                                            <DecisionCard
-                                                request={request}
-                                                onSelectOption={(optionId) => onReviewAction?.(request.id, 'APPROVED', optionId)}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="flex gap-3 pl-14">
-                                            <button
-                                                onClick={() => onReviewAction?.(request.id, 'APPROVED')}
-                                                className="flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-500 border border-green-500/20 rounded-lg hover:bg-green-500/20 transition-all font-medium text-sm"
-                                            >
-                                                <CheckCircle2 className="h-4 w-4" /> Approve
-                                            </button>
-                                            <button
-                                                onClick={() => onReviewAction?.(request.id, 'CHANGES_REQUESTED')}
-                                                className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 text-orange-500 border border-orange-500/20 rounded-lg hover:bg-orange-500/20 transition-all font-medium text-sm"
-                                            >
-                                                <MessageSquare className="h-4 w-4" /> Request Changes
-                                            </button>
-                                            <button
-                                                onClick={() => onReviewAction?.(request.id, 'REJECTED')}
-                                                className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-all font-medium text-sm"
-                                            >
-                                                <XCircle className="h-4 w-4" /> Reject
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })()
-                    )}
-
                     {/* Header */}
                     <div className="flex items-start justify-between p-6 border-b border-white/5">
                         <div className="space-y-1">
@@ -190,6 +133,28 @@ export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents, revie
                             <X className="h-6 w-6 text-muted-foreground" />
                         </button>
                     </div>
+
+                    {/* Review Banner */}
+                    {currentTask.activeReviewRequestId && (
+                        <div className="bg-orange-500/10 border-b border-orange-500/20 px-6 py-3 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-1.5 bg-orange-500/20 rounded-md text-orange-500">
+                                    <AlertTriangle className="h-4 w-4" />
+                                </div>
+                                <div className="text-sm">
+                                    <span className="font-bold text-orange-500">Review Required</span>
+                                    <span className="text-muted-foreground mx-2">•</span>
+                                    <span className="text-muted-foreground">Action needed to proceed</span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setIsReviewOpen(true)}
+                                className="px-4 py-1.5 bg-orange-500 text-white text-xs font-bold rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2 shadow-sm"
+                            >
+                                Review Now <ExternalLink className="h-3 w-3" />
+                            </button>
+                        </div>
+                    )}
 
                     {/* Scrollable Body */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-8">
@@ -352,6 +317,16 @@ export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents, revie
                 </div>
 
             </div>
+
+            {/* Nested Review Modal */}
+            {currentTask.activeReviewRequestId && (
+                <ReviewInteractionModal
+                    isOpen={isReviewOpen}
+                    onClose={() => setIsReviewOpen(false)}
+                    request={reviewRequests.find(r => r.id === currentTask.activeReviewRequestId)!}
+                    onAction={(id, action, optionId) => onReviewAction?.(id, action, optionId)}
+                />
+            )}
         </div>
     );
 }
