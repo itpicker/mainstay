@@ -22,6 +22,7 @@ const initialStages: ProjectStage[] = [
 
 const mockProject: Project = {
     id: '1',
+    workspaceId: 'ws-toss',
     name: 'Website Redesign',
     description: 'Overhaul of the corporate website with new branding.',
     status: 'ACTIVE',
@@ -95,7 +96,7 @@ const mockAgents: Agent[] = [
 export default function ProjectDetailsPage() {
     const [tasks, setTasks] = useState(initialTasks);
     const [stages, setStages] = useState(initialStages);
-    const [view, setView] = useState<ProjectView>('KANBAN');
+    const [view, setView] = useState<ProjectView>('TABLE');
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [newTaskStatus, setNewTaskStatus] = useState<string>('todo');
 

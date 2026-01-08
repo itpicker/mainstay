@@ -3,6 +3,12 @@ export type TaskStatus = string;
 export type AgentStatus = 'IDLE' | 'BUSY' | 'OFFLINE';
 export type AgentRole = 'RESEARCHER' | 'DEVELOPER' | 'DESIGNER' | 'REVIEWER' | 'MANAGER';
 
+export interface Workspace {
+    id: string;
+    name: string;
+    type: 'PERSONAL' | 'TEAM' | 'ENTERPRISE';
+}
+
 export interface ProjectStage {
     id: string;
     name: string;
@@ -11,6 +17,7 @@ export interface ProjectStage {
 
 export interface Project {
     id: string;
+    workspaceId: string;
     name: string;
     description: string;
     status: ProjectStatus;

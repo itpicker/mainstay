@@ -2,7 +2,7 @@
 
 import { Plus, Folder, Clock, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
-import { Project } from '@/lib/types';
+import { Project, Workspace } from '@/lib/types';
 
 // Mock data
 const defaultStages = [
@@ -12,9 +12,15 @@ const defaultStages = [
     { id: 'done', name: 'Done', color: 'bg-green-500' },
 ];
 
+const mockWorkspaces: Workspace[] = [
+    { id: 'ws-personal', name: 'Personal Workspace', type: 'PERSONAL' },
+    { id: 'ws-toss', name: 'Toss Lab - Dev Team', type: 'TEAM' },
+];
+
 const mockProjects: Project[] = [
     {
         id: '1',
+        workspaceId: 'ws-toss',
         name: 'Website Redesign',
         description: 'Overhaul of the corporate website with new branding.',
         status: 'ACTIVE',
@@ -25,6 +31,7 @@ const mockProjects: Project[] = [
     },
     {
         id: '2',
+        workspaceId: 'ws-toss',
         name: 'Market Research 2026',
         description: 'Analysis of emerging AI trends for the next fiscal year.',
         status: 'PLANNING',
@@ -35,8 +42,9 @@ const mockProjects: Project[] = [
     },
     {
         id: '3',
-        name: 'Mobile App Beta',
-        description: 'Prepare and launch the beta version of the mobile app.',
+        workspaceId: 'ws-personal',
+        name: 'Personal Portfolio',
+        description: 'My personal portfolio website built with Next.js.',
         status: 'COMPLETED',
         createdAt: '2025-11-15',
         taskCount: 20,
@@ -47,11 +55,11 @@ const mockProjects: Project[] = [
 
 export default function ProjectsPage() {
     return (
-        <div className="space-y-6">
+        <div className="space-y-10">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
-                    <p className="text-muted-foreground mt-1">Manage and track your agent-led initiatives.</p>
+                    <p className="text-muted-foreground mt-1">Manage all your projects across workspaces.</p>
                 </div>
                 <Link
                     href="/projects/new"
@@ -62,46 +70,65 @@ export default function ProjectsPage() {
                 </Link>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {mockProjects.map((project) => (
-                    <Link key={project.id} href={`/projects/${project.id}`}>
-                        <div className="glass-card rounded-xl p-6 flex flex-col group cursor-pointer hover:border-primary/50 transition-all duration-300">
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="p-3 bg-secondary rounded-lg group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                                    <Folder className="h-6 w-6" />
-                                </div>
-                                <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${project.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                                    project.status === 'PLANNING' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
-                                        'bg-gray-500/10 text-gray-500 border-gray-500/20'
-                                    }`}>
-                                    {project.status}
-                                </span>
-                            </div>
+            {mockWorkspaces.map((workspace) => {
+                const workspaceProjects = mockProjects.filter((p) => p.workspaceId === workspace.id);
+                if (workspaceProjects.length === 0) return null;
 
-                            <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">{project.name}</h3>
-                            <p className="text-sm text-muted-foreground mb-6 line-clamp-2">{project.description}</p>
-
-                            <div className="mt-auto pt-4 border-t border-dashed border-white/10 flex items-center justify-between text-sm text-muted-foreground">
-                                <div className="flex items-center">
-                                    <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                                    {project.completedTaskCount}/{project.taskCount} Tasks
-                                </div>
-                                <div className="flex items-center">
-                                    <Clock className="h-4 w-4 mr-1.5" />
-                                    {new Date(project.createdAt).toLocaleDateString()}
-                                </div>
-                            </div>
-                            {/* Progress bar */}
-                            <div className="mt-4 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                                    style={{ width: `${(project.completedTaskCount / project.taskCount) * 100}%` }}
-                                />
-                            </div>
+                return (
+                    <div key={workspace.id} className="space-y-4">
+                        <div className="flex items-center space-x-2 border-b border-border/40 pb-2">
+                            <h2 className="text-lg font-semibold text-foreground/90">{workspace.name}</h2>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${workspace.type === 'PERSONAL'
+                                ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                                : 'bg-purple-500/10 text-purple-500 border-purple-500/20'
+                                }`}>
+                                {workspace.type}
+                            </span>
                         </div>
-                    </Link>
-                ))}
-            </div>
+
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                            {workspaceProjects.map((project) => (
+                                <Link key={project.id} href={`/projects/${project.id}`}>
+                                    <div className="glass-card rounded-xl p-6 flex flex-col group cursor-pointer hover:border-primary/50 transition-all duration-300 h-full">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="p-3 bg-secondary rounded-lg group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                                                <Folder className="h-6 w-6" />
+                                            </div>
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${project.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                                project.status === 'PLANNING' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                                                    'bg-gray-500/10 text-gray-500 border-gray-500/20'
+                                                }`}>
+                                                {project.status}
+                                            </span>
+                                        </div>
+
+                                        <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">{project.name}</h3>
+                                        <p className="text-sm text-muted-foreground mb-6 line-clamp-2">{project.description}</p>
+
+                                        <div className="mt-auto pt-4 border-t border-dashed border-white/10 flex items-center justify-between text-sm text-muted-foreground">
+                                            <div className="flex items-center">
+                                                <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                                                {project.completedTaskCount}/{project.taskCount} Tasks
+                                            </div>
+                                            <div className="flex items-center">
+                                                <Clock className="h-4 w-4 mr-1.5" />
+                                                {new Date(project.createdAt).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                        {/* Progress bar */}
+                                        <div className="mt-4 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                                                style={{ width: `${(project.completedTaskCount / project.taskCount) * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 }
