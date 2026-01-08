@@ -1,25 +1,30 @@
 'use client';
 
-import { Check, Lock, ChevronRight, Circle } from 'lucide-react';
-import { Project } from '@/lib/types';
-import { WORKFLOW_STAGES, WorkflowStageId } from '@/lib/workflow';
+import { Check, Lock } from 'lucide-react';
+import { WorkflowStageDefinition, WorkflowStageId } from '@/lib/workflow';
 import { cn } from '@/lib/utils';
 
 interface WorkflowVisualizerProps {
+    stages: WorkflowStageDefinition[];
     currentStage: WorkflowStageId;
     onStageClick?: (stageId: WorkflowStageId) => void;
 }
 
-export function WorkflowVisualizer({ currentStage, onStageClick }: WorkflowVisualizerProps) {
-    const stages = Object.values(WORKFLOW_STAGES).filter(s => s.id !== 'COMPLETED'); // Show main 5 stages
-    const currentIndex = stages.findIndex(s => s.id === currentStage);
+export function WorkflowVisualizer({ stages, currentStage, onStageClick }: WorkflowVisualizerProps) {
+    const mainStages = stages.filter(s => s.id !== 'COMPLETED');
+    const currentIndex = mainStages.findIndex(s => s.id === currentStage);
+
+    // If current stage is COMPLETED, then all main stages are done
+    // If currentStage is not found (e.g. COMPLETED or invalid), currentIndex is -1.
+    // If completed, we want effectiveIndex to be length.
+    const effectiveIndex = currentStage === 'COMPLETED' ? mainStages.length : currentIndex;
 
     return (
         <div className="flex items-center w-full overflow-x-auto pb-4">
-            {stages.map((stage, index) => {
+            {mainStages.map((stage, index) => {
                 const isActive = stage.id === currentStage;
-                const isCompleted = index < currentIndex;
-                const isLocked = index > currentIndex;
+                const isCompleted = index < effectiveIndex;
+                const isLocked = index > effectiveIndex;
 
                 return (
                     <div key={stage.id} className="flex items-center shrink-0">
@@ -57,7 +62,7 @@ export function WorkflowVisualizer({ currentStage, onStageClick }: WorkflowVisua
                         </div>
 
                         {/* Connector Line */}
-                        {index < stages.length - 1 && (
+                        {index < mainStages.length - 1 && (
                             <div className="h-[2px] w-12 bg-white/5 mx-2 relative">
                                 <div
                                     className="absolute inset-y-0 left-0 bg-gradient-to-r from-green-500 to-green-500/50 transition-all duration-1000"

@@ -5,7 +5,7 @@ import { Lock, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { formatDate } from '@/lib/date';
 import { WorkflowVisualizer } from './WorkflowVisualizer';
-import { WorkflowStageId } from '@/lib/workflow';
+import { WorkflowStageId, WorkflowEngine } from '@/lib/workflow';
 
 interface ProjectPhaseHeaderProps {
     project: Project;
@@ -20,13 +20,16 @@ export function ProjectPhaseHeader({ project, onFreezePlanning, onRequestChange 
     // Fallback to REQUIREMENTS if no stage is set
     const currentStage = (project.workflowStage as WorkflowStageId) || 'REQUIREMENTS';
 
+    // Get ordered stages based on template
+    const stages = WorkflowEngine.getOrderedStages(project.workflowTemplateId);
+
     return (
         <div className="bg-secondary/20 border-b border-white/5 pt-6 pb-2 px-4">
             <div className="flex flex-col gap-6 max-w-7xl mx-auto">
 
                 {/* Visual Workflow Stepper */}
                 <div className="w-full overflow-x-auto">
-                    <WorkflowVisualizer currentStage={currentStage} />
+                    <WorkflowVisualizer stages={stages} currentStage={currentStage} />
                 </div>
 
                 {/* Actions Bar */}

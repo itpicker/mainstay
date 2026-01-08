@@ -59,10 +59,10 @@ export interface Project {
     id: string;
     workspaceId: string;
     name: string;
-    description: string;
     status: ProjectStatus;
-    lifecycle: ProjectLifecycle; // New field
-    workflowStage?: 'REQUIREMENTS' | 'ARCHITECTURE' | 'DESIGN' | 'IMPLEMENTATION' | 'REVIEW' | 'COMPLETED'; // Workflow Engine Stage
+    lifecycle: ProjectLifecycle; // Restored field for Phase Management
+    workflowStage?: string; // Dynamic Stage ID
+    workflowTemplateId?: string; // Valid Template ID
     isPlanningFrozen: boolean;   // New field
     planningFrozenAt?: string;   // New field
     createdAt: string;

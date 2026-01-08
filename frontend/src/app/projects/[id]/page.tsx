@@ -29,6 +29,7 @@ const mockProject: Project = {
     workspaceId: 'ws-toss',
     name: 'Website Redesign',
     description: 'Overhaul of the corporate website with new branding.',
+    workflowTemplateId: 'SOFTWARE_DEV', // Explicit Template
     status: 'ACTIVE',
     lifecycle: 'EXECUTION', // Initial state
     workflowStage: 'IMPLEMENTATION', // Testing Workflow Visualizer
