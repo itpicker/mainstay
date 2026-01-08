@@ -3,6 +3,20 @@ export type TaskStatus = string;
 export type AgentStatus = 'IDLE' | 'BUSY' | 'OFFLINE';
 export type AgentRole = 'RESEARCHER' | 'DEVELOPER' | 'DESIGNER' | 'REVIEWER' | 'MANAGER';
 
+export type ReviewStatus = 'PENDING' | 'APPROVED' | 'CHANGES_REQUESTED' | 'REJECTED';
+
+export interface ReviewRequest {
+    id: string;
+    taskId: string;
+    projectId: string;
+    title: string;
+    description: string;
+    status: ReviewStatus;
+    artifacts: Artifact[];
+    feedback?: string;
+    createdAt: string;
+}
+
 export interface Workspace {
     id: string;
     name: string;
@@ -39,6 +53,7 @@ export interface Artifact {
 export interface Task {
     id: string;
     projectId: string;
+    activeReviewRequestId?: string;
     title: string;
     description: string;
     status: TaskStatus;

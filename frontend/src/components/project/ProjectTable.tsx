@@ -3,7 +3,7 @@
 import { Task, Agent, ProjectStage } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { UserCircle, Calendar, Plus, ChevronDown, ChevronRight, Edit2, Trash2, Check, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 
 interface ProjectTableProps {
     tasks: Task[];
@@ -78,9 +78,9 @@ export function ProjectTable({
                         const isEditing = editingStageId === stage.id;
 
                         return (
-                            <>
+                            <Fragment key={stage.id}>
                                 {/* Group Header */}
-                                <tr key={`header-${stage.id}`} className="bg-white/5 group/header">
+                                <tr className="bg-white/5 group/header">
                                     <td colSpan={4} className="px-4 py-2">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2 flex-1">
@@ -172,7 +172,7 @@ export function ProjectTable({
                                             {task.endDate ? (
                                                 <div className="flex items-center gap-1.5">
                                                     <Calendar className="h-3.5 w-3.5" />
-                                                    {new Date(task.endDate).toLocaleDateString()}
+                                                    {new Date(task.endDate).toISOString().split('T')[0]}
                                                 </div>
                                             ) : '-'}
                                         </td>
@@ -187,7 +187,7 @@ export function ProjectTable({
                                         </td>
                                     </tr>
                                 )}
-                            </>
+                            </Fragment>
                         );
                     })}
                 </tbody>

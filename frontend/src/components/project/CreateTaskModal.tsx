@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Save, CheckSquare, Square, Trash2, Calendar, UserCircle } from 'lucide-react';
 import { Agent, TaskStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -32,6 +32,22 @@ export function CreateTaskModal({ isOpen, onClose, onSave, agents, defaultStatus
     // Subtask State
     const [subtasks, setSubtasks] = useState<{ id: string; title: string; completed: boolean }[]>([]);
     const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        if (isOpen) {
+            window.addEventListener('keydown', handleKeyDown);
+        }
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isOpen, onClose]);
 
     if (!isOpen) return null;
 

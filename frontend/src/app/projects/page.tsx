@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Folder, Clock, CheckCircle2 } from 'lucide-react';
+import { Plus, Folder, Clock, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { Project, Workspace } from '@/lib/types';
 
@@ -68,6 +68,45 @@ export default function ProjectsPage() {
                     <Plus className="mr-2 h-4 w-4" />
                     New Project
                 </Link>
+            </div>
+
+            {/* Waiting for You Section */}
+            <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl p-6">
+                <div className="flex items-center gap-2 mb-4">
+                    <AlertCircle className="h-5 w-5 text-orange-500" />
+                    <h2 className="text-lg font-semibold text-orange-500">Waiting for You</h2>
+                    <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">2</span>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <Link href="/inbox" className="glass-card p-4 rounded-lg border border-border/50 hover:border-orange-500/30 transition-all flex items-start gap-3 group bg-background/50">
+                        <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                            <FileText className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <h3 className="font-medium text-foreground group-hover:text-orange-500 transition-colors">Brand Guidelines PDF Review</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-1 mt-1">I have finalized the color palette and...</p>
+                            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                <span className="font-medium text-foreground">Website Redesign</span>
+                                <span>•</span>
+                                <span>Today</span>
+                            </div>
+                        </div>
+                    </Link>
+                    <Link href="/inbox" className="glass-card p-4 rounded-lg border border-border/50 hover:border-orange-500/30 transition-all flex items-start gap-3 group bg-background/50">
+                        <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                            <FileText className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <h3 className="font-medium text-foreground group-hover:text-orange-500 transition-colors">Home Page Hero Section</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-1 mt-1">The hero section implementation is...</p>
+                            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                <span className="font-medium text-foreground">Website Redesign</span>
+                                <span>•</span>
+                                <span>Yesterday</span>
+                            </div>
+                        </div>
+                    </Link>
+                </div>
             </div>
 
             {mockWorkspaces.map((workspace) => {

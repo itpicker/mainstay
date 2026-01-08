@@ -12,6 +12,7 @@ import { ProjectTimeline } from '@/components/project/ProjectTimeline';
 import { ProjectArtifacts } from '@/components/project/ProjectArtifacts';
 import { CreateTaskModal } from '@/components/project/CreateTaskModal';
 import { TaskDetailModal } from '@/components/project/TaskDetailModal';
+import { ProjectReviews } from '@/components/project/ProjectReviews';
 
 const initialStages: ProjectStage[] = [
     { id: 'todo', name: 'To Do', color: 'bg-slate-500' },
@@ -251,6 +252,9 @@ export default function ProjectDetailsPage() {
                 )}
                 {view === 'ARTIFACTS' && (
                     <ProjectArtifacts tasks={tasks} />
+                )}
+                {view === 'REVIEWS' && (
+                    <ProjectReviews projectId={mockProject.id} agents={mockAgents} />
                 )}
             </div>
         </div>
