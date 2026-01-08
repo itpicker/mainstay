@@ -275,7 +275,9 @@ function WorkflowEditor() {
                             fitView
                             className="bg-black/20"
                         >
-                            <Controls className="bg-secondary/50 border-white/10 text-foreground fill-foreground" />
+                            <Controls
+                                className="bg-secondary/50 border border-white/10 text-foreground [&>button]:!bg-card/80 [&>button]:!border-white/10 [&>button]:!fill-foreground [&>button:hover]:!bg-secondary"
+                            />
                             <Background color="#444" gap={20} size={1} />
                             <Panel position="top-right" className="bg-card/80 backdrop-blur border border-white/10 p-2 rounded-lg text-xs font-mono text-muted-foreground mr-12">
                                 Nodes: {nodes.length} | Edges: {edges.length}
