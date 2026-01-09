@@ -17,6 +17,9 @@ import { ProjectPhaseHeader } from '@/components/project/ProjectPhaseHeader';
 import { ChangeRequestModal } from '@/components/project/ChangeRequestModal';
 import { TaskDependencyGraph } from '@/components/project/TaskDependencyGraph';
 import { ProjectTeam } from '@/components/project/ProjectTeam';
+import { PlanningChat } from '@/components/project/PlanningChat';
+import { Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const initialStages: ProjectStage[] = [
     { id: 'todo', name: 'To Do', color: 'bg-slate-500' },
@@ -127,6 +130,10 @@ export default function ProjectDetailsPage() {
     // New state for task details
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+    // AI Planning State
+    const [isPlanningMode, setIsPlanningMode] = useState(false);
+    const [ghostTasks, setGhostTasks] = useState<Task[]>([]);
 
     const params = useParams();
 
@@ -304,6 +311,23 @@ export default function ProjectDetailsPage() {
                     <div className="flex items-center gap-3">
                         <ViewSwitcher currentView={view} onViewChange={setView} />
                         <div className="w-px h-8 bg-white/10 mx-1" />
+
+                        {/* AI Planning Trigger */}
+                        {(view === 'KANBAN' || view === 'TABLE') && (
+                            <button
+                                onClick={() => setIsPlanningMode(!isPlanningMode)}
+                                className={cn(
+                                    "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap",
+                                    isPlanningMode
+                                        ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+                                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                                )}
+                            >
+                                <Sparkles className="h-4 w-4" />
+                                {isPlanningMode ? 'Close AI Planner' : 'Plan with AI'}
+                            </button>
+                        )}
+
                         <Link href={`/projects/${project.id}/workflow`} className="px-4 py-2 bg-secondary text-secondary-foreground text-sm font-medium rounded-lg hover:bg-secondary/80 transition-colors">
                             View Workflow
                         </Link>
@@ -328,31 +352,57 @@ export default function ProjectDetailsPage() {
                 </div>
 
                 {/* View Content */}
-                <div className="flex-1 min-h-0 flex flex-col">
+                <div className="flex-1 min-h-0 flex overflow-hidden">
                     {view === 'KANBAN' && (
-                        <ProjectKanban
-                            tasks={tasks}
-                            agents={mockAgents}
-                            stages={stages}
-                            onAssign={handleAssign}
-                            onCreateTask={openCreateTaskModal}
-                            onTaskClick={openTaskDetail}
-                            onAddStage={handleAddStage}
-                            onUpdateStage={handleUpdateStage}
-                            onDeleteStage={handleDeleteStage}
-                            onMoveTask={handleTaskMove}
-                        />
+                        <div className="flex-1 flex min-w-0">
+                            <ProjectKanban
+                                tasks={[...tasks, ...ghostTasks]}
+                                agents={mockAgents}
+                                stages={stages}
+                                onAssign={handleAssign}
+                                onCreateTask={openCreateTaskModal}
+                                onTaskClick={openTaskDetail}
+                                onAddStage={handleAddStage}
+                                onUpdateStage={handleUpdateStage}
+                                onDeleteStage={handleDeleteStage}
+                                onMoveTask={handleTaskMove}
+                            />
+                            {isPlanningMode && (
+                                <PlanningChat
+                                    onClose={() => setIsPlanningMode(false)}
+                                    onUpdateGhostTasks={setGhostTasks}
+                                    onConfirmPlan={(newTasks) => {
+                                        setTasks([...tasks, ...newTasks]);
+                                        setGhostTasks([]);
+                                        setIsPlanningMode(false);
+                                    }}
+                                />
+                            )}
+                        </div>
                     )}
                     {view === 'TABLE' && (
-                        <ProjectTable
-                            tasks={tasks}
-                            agents={mockAgents}
-                            stages={stages}
-                            onTaskClick={openTaskDetail}
-                            onCreateTask={openCreateTaskModal}
-                            onUpdateStage={handleUpdateStage}
-                            onDeleteStage={handleDeleteStage}
-                        />
+                        <div className="flex-1 flex min-w-0">
+                            <ProjectTable
+                                tasks={[...tasks, ...ghostTasks]}
+                                agents={mockAgents}
+                                stages={stages}
+                                onTaskClick={openTaskDetail}
+                                onCreateTask={openCreateTaskModal}
+                                onUpdateStage={handleUpdateStage}
+                                onDeleteStage={handleDeleteStage}
+                            />
+                            {isPlanningMode && (
+                                <PlanningChat
+                                    onClose={() => setIsPlanningMode(false)}
+                                    onUpdateGhostTasks={setGhostTasks}
+                                    onConfirmPlan={(newTasks) => {
+                                        setTasks([...tasks, ...newTasks]);
+                                        setGhostTasks([]);
+                                        setIsPlanningMode(false);
+                                    }}
+                                />
+                            )}
+                        </div>
                     )}
                     {view === 'ARTIFACTS' && (
                         <ProjectArtifacts tasks={tasks} />
