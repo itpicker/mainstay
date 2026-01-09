@@ -318,14 +318,14 @@ export default function ProjectDetailsPage() {
                             <button
                                 onClick={() => setIsPlanningMode(!isPlanningMode)}
                                 className={cn(
-                                    "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap",
+                                    "p-2 rounded-lg transition-colors flex items-center justify-center",
                                     isPlanningMode
                                         ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
                                         : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                                 )}
+                                title={isPlanningMode ? 'Close AI Planner' : 'Plan with AI'}
                             >
                                 <Sparkles className="h-4 w-4" />
-                                {isPlanningMode ? 'Close AI Planner' : 'Plan with AI'}
                             </button>
                         )}
 
