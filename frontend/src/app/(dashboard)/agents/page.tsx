@@ -16,7 +16,7 @@ export default function AgentsPage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Agent Fleet</h1>
-                <p className="text-muted-foreground mt-1">Monitor and configure your specialized AI agents.</p>
+                <p className="text-muted-foreground mt-1">Available agent templates for your projects.</p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -32,8 +32,8 @@ export default function AgentsPage() {
                                 <Bot className="h-6 w-6 text-foreground" />
                             </div>
                             <div className={`px-2 py-1 rounded text-xs font-bold border ${agent.status === 'IDLE' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                                    agent.status === 'BUSY' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
-                                        'bg-red-500/10 text-red-500 border-red-500/20'
+                                agent.status === 'BUSY' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
+                                    'bg-red-500/10 text-red-500 border-red-500/20'
                                 }`}>
                                 {agent.status}
                             </div>
@@ -53,8 +53,8 @@ export default function AgentsPage() {
                             </div>
                         </div>
 
-                        <button className="mt-auto w-full py-2 rounded-lg bg-secondary/50 hover:bg-secondary border border-white/5 text-xs font-medium transition-colors relative z-10">
-                            View Logs
+                        <button className="mt-auto pt-4 border-t border-white/5 w-full py-2 rounded-lg bg-secondary/50 hover:bg-secondary text-xs font-medium transition-colors relative z-10">
+                            View Details
                         </button>
                     </div>
                 ))}

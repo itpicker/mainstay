@@ -21,7 +21,7 @@ export default function SettingsPage() {
     const [aiConfig, setAiConfig] = useState({
         defaultModel: 'gpt-4',
         temperature: 0.7,
-        autonomyLevel: 50, // 0-100
+        autonomyLevel: 3, // Level 1-5
         openaiKey: 'sk-........................',
         anthropicKey: '',
     });
@@ -190,23 +190,46 @@ export default function SettingsPage() {
                             {/* Autonomy Level */}
                             <div className="space-y-4 pt-4 border-t border-white/5 relative">
                                 <div className="flex items-center justify-between">
-                                    <label className="text-sm font-medium text-foreground">Agent Autonomy Level</label>
-                                    <span className="text-sm font-mono text-primary bg-primary/10 px-2 py-0.5 rounded">
-                                        {aiConfig.autonomyLevel}%
+                                    <label className="text-sm font-medium text-foreground">Default Organization Autonomy</label>
+                                    <span className={cn(
+                                        "text-sm font-bold px-2 py-0.5 rounded border",
+                                        aiConfig.autonomyLevel <= 2 ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                                            aiConfig.autonomyLevel <= 3 ? "bg-blue-500/10 text-blue-500 border-blue-500/20" :
+                                                aiConfig.autonomyLevel <= 4 ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
+                                                    "bg-red-500/10 text-red-500 border-red-500/20"
+                                    )}>
+                                        Level {aiConfig.autonomyLevel}
                                     </span>
                                 </div>
                                 <input
                                     type="range"
-                                    min="0"
-                                    max="100"
+                                    min="1"
+                                    max="5"
+                                    step="1"
                                     value={aiConfig.autonomyLevel}
                                     onChange={(e) => setAiConfig({ ...aiConfig, autonomyLevel: parseInt(e.target.value) })}
                                     className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
                                 />
-                                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                                    <span>Human-in-the-loop (0%)</span>
-                                    <span>Semi-Autonomous</span>
-                                    <span>Fully Autonomous (100%)</span>
+                                <div className="flex justify-between text-xs text-muted-foreground mt-1 px-1">
+                                    <span title="Assistant (Suggest Only)">L1</span>
+                                    <span title="Junior (Draft & Review)">L2</span>
+                                    <span title="Senior (Execute & Report)">L3</span>
+                                    <span title="Lead (Goal-Oriented)">L4</span>
+                                    <span title="Autonomous (Supervised)">L5</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-2 bg-white/5 p-3 rounded-lg border border-white/5">
+                                    <span className="font-bold text-foreground">
+                                        {aiConfig.autonomyLevel === 1 && "Level 1: Assistant - "}
+                                        {aiConfig.autonomyLevel === 2 && "Level 2: Junior - "}
+                                        {aiConfig.autonomyLevel === 3 && "Level 3: Senior - "}
+                                        {aiConfig.autonomyLevel === 4 && "Level 4: Lead - "}
+                                        {aiConfig.autonomyLevel === 5 && "Level 5: Autonomous - "}
+                                    </span>
+                                    {aiConfig.autonomyLevel === 1 && "Only suggests changes. Cannot edit files directly."}
+                                    {aiConfig.autonomyLevel === 2 && "Can draft code but requires approval for everything."}
+                                    {aiConfig.autonomyLevel === 3 && "Executes standard tasks. Asks before destructive actions."}
+                                    {aiConfig.autonomyLevel === 4 && "Manages subtasks and coordinates other agents."}
+                                    {aiConfig.autonomyLevel === 5 && "Full autonomy to monitor and fix issues proactively."}
                                 </div>
                             </div>
 

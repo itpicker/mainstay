@@ -138,5 +138,6 @@ export interface Agent {
     role: AgentRole;
     status: AgentStatus;
     capabilities: string[];
+    autonomyLevel?: number; // 1-5
     avatar?: string;
 }

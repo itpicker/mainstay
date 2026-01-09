@@ -16,6 +16,7 @@ import { ProjectReviews } from '@/components/project/ProjectReviews';
 import { ProjectPhaseHeader } from '@/components/project/ProjectPhaseHeader';
 import { ChangeRequestModal } from '@/components/project/ChangeRequestModal';
 import { TaskDependencyGraph } from '@/components/project/TaskDependencyGraph';
+import { ProjectTeam } from '@/components/project/ProjectTeam';
 
 const initialStages: ProjectStage[] = [
     { id: 'todo', name: 'To Do', color: 'bg-slate-500' },
@@ -116,6 +117,8 @@ const mockAgents: Agent[] = [
 export default function ProjectDetailsPage() {
     const [tasks, setTasks] = useState(initialTasks);
     const [stages, setStages] = useState(initialStages);
+    // Initialize project agents with default autonomy level 3
+    const [projectAgents, setProjectAgents] = useState<Agent[]>(mockAgents.map(a => ({ ...a, autonomyLevel: 3 })));
     const [view, setView] = useState<ProjectView>('TABLE');
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [newTaskStatus, setNewTaskStatus] = useState<string>('todo');
@@ -129,6 +132,10 @@ export default function ProjectDetailsPage() {
 
     const handleAssign = (taskId: string, agentId: string) => {
         setTasks(tasks.map(t => t.id === taskId ? { ...t, assignedAgentId: agentId } : t));
+    };
+
+    const handleUpdateAgent = (updatedAgent: Agent) => {
+        setProjectAgents(projectAgents.map(a => a.id === updatedAgent.id ? updatedAgent : a));
     };
 
     // Stage Management Handlers
@@ -358,6 +365,12 @@ export default function ProjectDetailsPage() {
                             history={reviewHistory}
                             changeRequests={changeRequests}
                             onAction={handleReviewAction}
+                        />
+                    )}
+                    {view === 'TEAM' && (
+                        <ProjectTeam
+                            agents={projectAgents}
+                            onUpdateAgent={handleUpdateAgent}
                         />
                     )}
                     {view === 'GRAPH' && (
