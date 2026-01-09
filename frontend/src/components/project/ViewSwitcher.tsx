@@ -14,7 +14,6 @@ export function ViewSwitcher({ currentView, onViewChange }: ViewSwitcherProps) {
     const views: { id: ProjectView; label: string; icon: any }[] = [
         { id: 'KANBAN', label: 'Board', icon: LayoutGrid },
         { id: 'TABLE', label: 'List', icon: List },
-        { id: 'TIMELINE', label: 'Timeline', icon: Calendar },
         { id: 'ARTIFACTS', label: 'Artifacts', icon: Box },
         { id: 'REVIEWS', label: 'Reviews', icon: MessageSquare },
         { id: 'GRAPH', label: 'Graph', icon: Network },

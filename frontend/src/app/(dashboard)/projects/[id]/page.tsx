@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, Play } from 'lucide-react';
+import { ArrowLeft, Play, Pause } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Task, Agent, Project, ProjectStage, TaskStatus, ReviewRequest, ChangeRequest } from '@/lib/types';
@@ -9,7 +9,6 @@ import { mockPending, mockHistory, mockChanges } from '@/lib/mock-data';
 import { ProjectKanban } from '@/components/project/ProjectKanban';
 import { ViewSwitcher, ProjectView } from '@/components/project/ViewSwitcher';
 import { ProjectTable } from '@/components/project/ProjectTable';
-import { ProjectTimeline } from '@/components/project/ProjectTimeline';
 import { ProjectArtifacts } from '@/components/project/ProjectArtifacts';
 import { CreateTaskModal } from '@/components/project/CreateTaskModal';
 import { TaskDetailModal } from '@/components/project/TaskDetailModal';
@@ -347,9 +346,6 @@ export default function ProjectDetailsPage() {
                             onUpdateStage={handleUpdateStage}
                             onDeleteStage={handleDeleteStage}
                         />
-                    )}
-                    {view === 'TIMELINE' && (
-                        <ProjectTimeline tasks={tasks} />
                     )}
                     {view === 'ARTIFACTS' && (
                         <ProjectArtifacts tasks={tasks} />

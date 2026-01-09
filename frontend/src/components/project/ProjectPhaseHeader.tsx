@@ -38,7 +38,7 @@ export function ProjectPhaseHeader({ project }: { project: Project }) {
                         ) : (
                             <div className="flex items-center gap-2 text-xs text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
                                 <div className="h-2 w-2 rounded-full bg-yellow-500" />
-                                Operations Paused
+                                Agents Idle
                             </div>
                         )}
                     </div>
