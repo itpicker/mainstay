@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/date';
 import { WorkflowVisualizer } from './WorkflowVisualizer';
 import { WorkflowStageId, WorkflowEngine } from '@/lib/workflow';
 
-export function ProjectPhaseHeader({ project, onToggleActivity }: { project: Project; onToggleActivity: () => void }) {
+export function ProjectPhaseHeader({ project }: { project: Project }) {
     // Get ordered stages based on template
     const stages = WorkflowEngine.getOrderedStages(project.workflowTemplateId);
     const currentStage = (project.workflowStage as WorkflowStageId) || 'REQUIREMENTS';
@@ -42,36 +42,7 @@ export function ProjectPhaseHeader({ project, onToggleActivity }: { project: Pro
                             </div>
                         )}
                     </div>
-
-                    <div className="flex items-center gap-4">
-                        {project.isAgentsActive ? (
-                            <div className="flex items-center gap-4">
-                                <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                                    <Lock className="h-3 w-3" /> Plan Locked
-                                </span>
-                                <button
-                                    onClick={onToggleActivity}
-                                    className="px-3 py-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border border-yellow-500/20 rounded-lg transition-colors text-xs font-medium flex items-center gap-2"
-                                >
-                                    <Pause className="h-3.5 w-3.5" />
-                                    Pause Agents
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-4">
-                                <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                                    <Edit3 className="h-3 w-3" /> Editing Enabled
-                                </span>
-                                <button
-                                    onClick={onToggleActivity}
-                                    className="px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 rounded-lg transition-colors text-xs font-medium flex items-center gap-2"
-                                >
-                                    <Play className="h-3.5 w-3.5" />
-                                    Resume Operations
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    {/* Buttons removed to use global Run/Pause in Page Header */}
                 </div>
             </div>
         </div>

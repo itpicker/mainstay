@@ -252,7 +252,6 @@ export default function ProjectDetailsPage() {
             {/* Phase Header - Global for Project */}
             <ProjectPhaseHeader
                 project={project}
-                onToggleActivity={toggleAgentActivity}
             />
 
             <ChangeRequestModal
@@ -302,8 +301,22 @@ export default function ProjectDetailsPage() {
                         <Link href={`/projects/${project.id}/workflow`} className="px-4 py-2 bg-secondary text-secondary-foreground text-sm font-medium rounded-lg hover:bg-secondary/80 transition-colors">
                             View Workflow
                         </Link>
-                        <button className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
-                            <Play className="h-4 w-4" /> Run Project
+                        <button
+                            onClick={toggleAgentActivity}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 ${project.isAgentsActive
+                                ? 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border border-yellow-500/20'
+                                : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                }`}
+                        >
+                            {project.isAgentsActive ? (
+                                <>
+                                    <Pause className="h-4 w-4" /> Pause Project
+                                </>
+                            ) : (
+                                <>
+                                    <Play className="h-4 w-4" /> Run Project
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
