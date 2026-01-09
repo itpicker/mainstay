@@ -20,6 +20,7 @@ import { ProjectTeam } from '@/components/project/ProjectTeam';
 import { PlanningChat } from '@/components/project/PlanningChat';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AgentChatWindow } from '@/components/project/AgentChatWindow';
 
 const initialStages: ProjectStage[] = [
     { id: 'todo', name: 'To Do', color: 'bg-slate-500' },
@@ -134,6 +135,9 @@ export default function ProjectDetailsPage() {
     // AI Planning State
     const [isPlanningMode, setIsPlanningMode] = useState(false);
     const [ghostTasks, setGhostTasks] = useState<Task[]>([]);
+
+    // Agent Chat State
+    const [activeChatAgentId, setActiveChatAgentId] = useState<string | null>(null);
 
     const params = useParams();
 
@@ -418,6 +422,7 @@ export default function ProjectDetailsPage() {
                         <ProjectTeam
                             agents={projectAgents}
                             onUpdateAgent={handleUpdateAgent}
+                            onMessage={(agent) => setActiveChatAgentId(agent.id)}
                         />
                     )}
                     {view === 'GRAPH' && (
@@ -425,6 +430,14 @@ export default function ProjectDetailsPage() {
                     )}
                 </div>
             </div>
+
+            {/* Global Chat Window */}
+            {activeChatAgentId && (
+                <AgentChatWindow
+                    agent={mockAgents.find(a => a.id === activeChatAgentId)!}
+                    onClose={() => setActiveChatAgentId(null)}
+                />
+            )}
         </div>
     );
 }

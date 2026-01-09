@@ -2,16 +2,17 @@
 
 import { useState } from 'react';
 import { Agent } from '@/lib/types';
-import { Bot, Shield, Terminal, Plus, UserCircle, Trash2 } from 'lucide-react';
+import { Bot, Shield, Terminal, Plus, UserCircle, Trash2, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProjectTeamProps {
     agents: Agent[];
     onUpdateAgent: (agent: Agent) => void;
     onRemoveAgent?: (agentId: string) => void;
+    onMessage?: (agent: Agent) => void;
 }
 
-export function ProjectTeam({ agents, onUpdateAgent, onRemoveAgent }: ProjectTeamProps) {
+export function ProjectTeam({ agents, onUpdateAgent, onRemoveAgent, onMessage }: ProjectTeamProps) {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
@@ -55,14 +56,25 @@ export function ProjectTeam({ agents, onUpdateAgent, onRemoveAgent }: ProjectTea
                                     </div>
                                 </div>
                             </div>
-                            {onRemoveAgent && (
+
+                            {/* Actions */}
+                            <div className="flex gap-1 items-start">
                                 <button
-                                    onClick={() => onRemoveAgent(agent.id)}
-                                    className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                    onClick={() => onMessage?.(agent)}
+                                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-lg transition-colors border border-transparent hover:border-white/10"
+                                    title="Direct Message"
                                 >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Send className="h-4 w-4" />
                                 </button>
-                            )}
+                                {onRemoveAgent && (
+                                    <button
+                                        onClick={() => onRemoveAgent(agent.id)}
+                                        className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Validated Capabilities */}
@@ -115,8 +127,9 @@ export function ProjectTeam({ agents, onUpdateAgent, onRemoveAgent }: ProjectTea
                             </div>
                         </div>
                     </div>
-                ))}
-            </div>
-        </div>
+                ))
+                }
+            </div >
+        </div >
     );
 }
