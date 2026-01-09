@@ -262,10 +262,7 @@ export default function ProjectDetailsPage() {
 
     return (
         <div className="flex flex-col h-full">
-            {/* Phase Header - Global for Project */}
-            <ProjectPhaseHeader
-                project={project}
-            />
+            {/* Phase Header Removed */}
 
             <ChangeRequestModal
                 isOpen={isChangeRequestOpen}
