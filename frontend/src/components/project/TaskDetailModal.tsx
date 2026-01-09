@@ -258,19 +258,24 @@ export function TaskDetailModal({ task, isOpen, onClose, onUpdate, agents, revie
                 {/* Sidebar */}
                 <div className="w-80 bg-secondary/20 border-l border-white/5 p-6 space-y-8 overflow-y-auto">
                     {/* Assignee */}
+                    {/* Assignee */}
                     <div className="space-y-2">
                         <label className="text-xs font-semibold text-muted-foreground uppercase">Assignee</label>
-                        <div className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
-                            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                                <UserCircle className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                            <div>
-                                <div className="text-sm font-medium">
-                                    {agents.find(a => a.id === currentTask.assignedAgentId)?.name || "Unassigned"}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                    {agents.find(a => a.id === currentTask.assignedAgentId)?.role || "No Role"}
-                                </div>
+                        <div className="relative">
+                            <select
+                                value={currentTask.assignedAgentId || ""}
+                                onChange={(e) => updateTask({ ...currentTask, assignedAgentId: e.target.value || undefined })}
+                                className="w-full appearance-none bg-white/5 border border-white/5 rounded-lg p-2 pl-12 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary hover:bg-white/10 transition-colors cursor-pointer"
+                            >
+                                <option value="" className="bg-zinc-900 text-zinc-400">Unassigned</option>
+                                {agents.map(agent => (
+                                    <option key={agent.id} value={agent.id} className="bg-zinc-900">
+                                        {agent.name} ({agent.role})
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-secondary flex items-center justify-center pointer-events-none">
+                                <UserCircle className="h-5 w-5 text-muted-foreground" />
                             </div>
                         </div>
                     </div>

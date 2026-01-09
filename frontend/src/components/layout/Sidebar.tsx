@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, FolderKanban, Users, Workflow, Settings } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Users, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -9,7 +9,6 @@ const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Projects', href: '/projects', icon: FolderKanban },
     { name: 'Agents', href: '/agents', icon: Users },
-    { name: 'Workflows', href: '/workflows', icon: Workflow },
     { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
