@@ -35,16 +35,6 @@ const edgeTypes = {
     deletable: DeletableEdge,
 };
 
-// Available Agents for Dragging
-const availableAgents = [
-    { role: 'MANAGER', label: 'Project Manager' },
-    { role: 'DEVELOPER', label: 'Frontend Dev' },
-    { role: 'DEVELOPER', label: 'Backend Dev' },
-    { role: 'DESIGNER', label: 'UI/UX Designer' },
-    { role: 'RESEARCHER', label: 'Tech Researcher' },
-    { role: 'REVIEWER', label: 'Code Reviewer' },
-];
-
 const initialNodes: Node[] = [
     {
         id: '1',
@@ -83,20 +73,59 @@ function WorkflowEditor() {
     const [selectedNode, setSelectedNode] = useState<Node | null>(null);
     const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
 
+    const [selectedTemplateIndex, setSelectedTemplateIndex] = useState<number | null>(null);
+
+    const [agentTemplates, setAgentTemplates] = useState([
+        { role: 'MANAGER', label: 'Project Manager' },
+        { role: 'DEVELOPER', label: 'Frontend Dev' },
+        { role: 'DEVELOPER', label: 'Backend Dev' },
+        { role: 'DESIGNER', label: 'UI/UX Designer' },
+        { role: 'RESEARCHER', label: 'Tech Researcher' },
+        { role: 'REVIEWER', label: 'Code Reviewer' },
+    ]);
+
+    const addNewAgentTemplate = () => {
+        const newTemplate = {
+            role: 'DEVELOPER',
+            label: `New Agent ${agentTemplates.length + 1}`
+        };
+        setAgentTemplates([...agentTemplates, newTemplate]);
+    };
+
     const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
         setSelectedNode(node);
-        setSelectedEdge(null); // Clear edge selection
+        setSelectedEdge(null);
+        setSelectedTemplateIndex(null);
     }, []);
 
     const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
         setSelectedEdge(edge);
-        setSelectedNode(null); // Clear node selection
+        setSelectedNode(null);
+        setSelectedTemplateIndex(null);
     }, []);
 
     const onPaneClick = useCallback(() => {
         setSelectedNode(null);
         setSelectedEdge(null);
+        setSelectedTemplateIndex(null);
     }, []);
+
+    const onTemplateClick = (index: number) => {
+        setSelectedTemplateIndex(index);
+        setSelectedNode(null);
+        setSelectedEdge(null);
+    };
+
+    const onTemplateUpdate = useCallback((nodeId: string, newData: any) => {
+        if (selectedTemplateIndex !== null) {
+            setAgentTemplates((prevTemplates) => {
+                const newTemplates = [...prevTemplates];
+                newTemplates[selectedTemplateIndex] = { ...newTemplates[selectedTemplateIndex], ...newData };
+                return newTemplates;
+            });
+            setIsSaved(false);
+        }
+    }, [selectedTemplateIndex]);
 
     const onNodeUpdate = useCallback((nodeId: string, newData: any) => {
         setNodes((nds) =>
@@ -113,6 +142,8 @@ function WorkflowEditor() {
         setSelectedNode((prev) => prev?.id === nodeId ? { ...prev, data: { ...prev.data, ...newData } } : prev);
         setIsSaved(false);
     }, [setNodes]);
+
+    // ... (keep existing onEdgeUpdate)
 
     const onEdgeUpdate = useCallback((edgeId: string, newData: any) => {
         setEdges((eds) =>
@@ -222,10 +253,16 @@ function WorkflowEditor() {
                             <Grid className="h-4 w-4" /> Available Agents
                         </h3>
                         <div className="space-y-3">
-                            {availableAgents.map((agent, index) => (
+                            {agentTemplates.map((agent: any, index: number) => (
                                 <div
                                     key={index}
-                                    className="bg-secondary/30 border border-white/5 rounded-lg p-3 cursor-grab hover:bg-secondary/50 hover:border-primary/30 transition-all flex items-center gap-3 group"
+                                    onClick={() => onTemplateClick(index)}
+                                    className={cn(
+                                        "border rounded-lg p-3 cursor-grab hover:bg-secondary/50 hover:border-primary/30 transition-all flex items-center gap-3 group",
+                                        selectedTemplateIndex === index
+                                            ? "bg-secondary/80 border-primary shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                                            : "bg-secondary/30 border-white/5"
+                                    )}
                                     onDragStart={(event) => onDragStart(event, 'agent', agent)}
                                     draggable
                                 >
@@ -240,7 +277,10 @@ function WorkflowEditor() {
                             ))}
                         </div>
                         <div className="mt-auto pt-4 border-t border-white/5">
-                            <button className="w-full py-2 flex items-center justify-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors border border-dashed border-white/10 rounded-lg hover:bg-white/5">
+                            <button
+                                onClick={addNewAgentTemplate}
+                                className="w-full py-2 flex items-center justify-center gap-2 text-xs font-medium text-muted-foreground hover:text-primary transition-colors border border-dashed border-white/10 rounded-lg hover:bg-white/5"
+                            >
                                 <Plus className="h-3 w-3" /> Create New Agent Type
                             </button>
                         </div>
@@ -249,9 +289,9 @@ function WorkflowEditor() {
                     <div className="glass-card rounded-xl p-4">
                         <h4 className="text-xs font-bold mb-2 text-muted-foreground uppercase tracking-wider">Instructions</h4>
                         <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                            <li>Select an agent to edit properties.</li>
                             <li>Drag agents from this list to the canvas.</li>
                             <li>Connect dots to define communication flow.</li>
-                            <li>Select a node and press Backspace to delete.</li>
                         </ul>
                     </div>
                 </aside>
@@ -274,6 +314,7 @@ function WorkflowEditor() {
                             edgeTypes={edgeTypes}
                             fitView
                             className="bg-black/20"
+                            proOptions={{ hideAttribution: true }}
                         >
                             <Controls
                                 className="bg-secondary/50 border border-white/10 text-foreground [&>button]:!bg-card/80 [&>button]:!border-white/10 [&>button]:!fill-foreground [&>button:hover]:!bg-secondary"
@@ -291,6 +332,27 @@ function WorkflowEditor() {
                             node={selectedNode}
                             onClose={() => setSelectedNode(null)}
                             onUpdate={onNodeUpdate}
+                        />
+                    )}
+
+                    {selectedTemplateIndex !== null && (
+                        <NodeInspector
+                            node={{
+                                id: `template-${selectedTemplateIndex}`,
+                                position: { x: 0, y: 0 },
+                                type: 'agent',
+                                data: agentTemplates[selectedTemplateIndex]
+                            }}
+                            onClose={() => setSelectedTemplateIndex(null)}
+                            onUpdate={onTemplateUpdate}
+                        />
+                    )}
+
+                    {selectedEdge && (
+                        <EdgeInspector
+                            edge={selectedEdge}
+                            onClose={() => setSelectedEdge(null)}
+                            onUpdate={onEdgeUpdate}
                         />
                     )}
                 </div>

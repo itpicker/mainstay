@@ -36,6 +36,7 @@ const mockProject: Project = {
     workflowStage: 'IMPLEMENTATION', // Testing Workflow Visualizer
     isPlanningFrozen: true,
     planningFrozenAt: '2025-12-05T10:00:00Z',
+    isAgentsActive: false, // New Dynamic Locking Field
     createdAt: '2025-12-01',
     taskCount: 3,
     completedTaskCount: 1,
@@ -119,7 +120,7 @@ export default function ProjectDetailsPage() {
     const [view, setView] = useState<ProjectView>('TABLE');
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [newTaskStatus, setNewTaskStatus] = useState<string>('todo');
-    const [project, setProject] = useState(mockProject);
+    const [project, setProject] = useState<Project>(mockProject);
 
     // New state for task details
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -153,9 +154,16 @@ export default function ProjectDetailsPage() {
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
     };
 
+    const toggleAgentActivity = () => {
+        setProject(prev => ({
+            ...prev,
+            isAgentsActive: !prev.isAgentsActive
+        }));
+    };
+
     const openCreateTaskModal = (status: string = 'todo') => {
-        if (project.isPlanningFrozen) {
-            alert("Planning is frozen. You must submit a Change Request to add new tasks during Execution.");
+        if (project.isAgentsActive) {
+            alert("Planning is locked while Agents are active. Please pause operations to modify the plan.");
             return;
         }
         setNewTaskStatus(status);
@@ -225,14 +233,8 @@ export default function ProjectDetailsPage() {
         }
     };
 
-    const handleFreezePlanning = () => {
-        setProject({
-            ...project,
-            lifecycle: 'EXECUTION',
-            isPlanningFrozen: true,
-            planningFrozenAt: new Date().toISOString()
-        });
-    };
+    // Deprecated but kept mapping if needed, or removed if unused.
+    // toggleAgentActivity replaces freeze planning.
 
     const [isChangeRequestOpen, setIsChangeRequestOpen] = useState(false);
 
@@ -242,7 +244,6 @@ export default function ProjectDetailsPage() {
 
     const handleSubmitChangeRequest = (data: { title: string; description: string; impact: string }) => {
         console.log("Change Request Submitted:", data);
-        // Here we would typically save to backend
         alert("Change Request Submitted! Planning is now temporarily unlocked for review.");
     };
 
@@ -251,8 +252,7 @@ export default function ProjectDetailsPage() {
             {/* Phase Header - Global for Project */}
             <ProjectPhaseHeader
                 project={project}
-                onFreezePlanning={handleFreezePlanning}
-                onRequestChange={handleRequestChange}
+                onToggleActivity={toggleAgentActivity}
             />
 
             <ChangeRequestModal

@@ -62,10 +62,18 @@ export interface Project {
     description: string; // Restored
     status: ProjectStatus;
     lifecycle: ProjectLifecycle; // Restored field for Phase Management
-    workflowStage?: string; // Dynamic Stage ID
-    workflowTemplateId?: string; // Valid Template ID
-    isPlanningFrozen: boolean;   // New field
-    planningFrozenAt?: string;   // New field
+    // workflowStage?: string; // Dynamic Stage ID
+    // workflowTemplateId?: string; // Valid Template ID
+    // isPlanningFrozen: boolean;   // Deprecated / repurposed
+    // planningFrozenAt?: string;   // New field
+
+    // New Dynamic Locking Field
+    isAgentsActive: boolean; // Determines if editing is locked
+
+    workflowStage?: string;
+    workflowTemplateId?: string;
+    isPlanningFrozen: boolean;
+    planningFrozenAt?: string;
     createdAt: string;
     deadline?: string;
     taskCount: number;
