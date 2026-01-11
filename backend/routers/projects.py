@@ -203,3 +203,28 @@ def create_project_agent(project_id: UUID, agent: AgentCreate, user = Depends(ge
         return response.data[0]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.patch("/{project_id}/agents/{agent_id}", response_model=AgentResponse)
+def update_project_agent(project_id: UUID, agent_id: UUID, agent_update: dict, user = Depends(get_current_user)):
+    """Update an agent's details (role, model, goal, etc.)."""
+    try:
+        # Verify access
+        p_response = supabase.table("projects").select("id").eq("id", str(project_id)).eq("owner_id", user.id).execute()
+        if not p_response.data:
+             raise HTTPException(status_code=404, detail="Project not found")
+        
+        # Filter allowed fields
+        allowed_fields = {"name", "role", "model", "goal", "capabilities", "autonomy_level", "status"}
+        update_data = {k: v for k, v in agent_update.items() if k in allowed_fields}
+        
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No valid fields to update")
+
+        response = supabase.table("agents").update(update_data).eq("id", str(agent_id)).eq("project_id", str(project_id)).execute()
+        
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Agent not found or update failed")
+            
+        return response.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

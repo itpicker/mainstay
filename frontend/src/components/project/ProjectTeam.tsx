@@ -11,9 +11,10 @@ interface ProjectTeamProps {
     onRemoveAgent?: (agentId: string) => void;
     onMessage?: (agent: Agent) => void;
     onAddAgent?: () => void;
+    onEditAgent?: (agent: Agent) => void;
 }
 
-export function ProjectTeam({ agents, onUpdateAgent, onRemoveAgent, onMessage, onAddAgent }: ProjectTeamProps) {
+export function ProjectTeam({ agents, onUpdateAgent, onRemoveAgent, onMessage, onAddAgent, onEditAgent }: ProjectTeamProps) {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
@@ -72,6 +73,15 @@ export function ProjectTeam({ agents, onUpdateAgent, onRemoveAgent, onMessage, o
                                 >
                                     <Send className="h-4 w-4" />
                                 </button>
+                                {onEditAgent && (
+                                    <button
+                                        onClick={() => onEditAgent(agent)}
+                                        className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                                        title="Edit Agent"
+                                    >
+                                        <Bot className="h-4 w-4" /> {/* Or Pencil icon, verifying imports... Bot is imported. */}
+                                    </button>
+                                )}
                                 {onRemoveAgent && (
                                     <button
                                         onClick={() => onRemoveAgent(agent.id)}

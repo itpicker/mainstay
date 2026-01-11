@@ -50,6 +50,7 @@ export default function ProjectDetailsPage() {
     const [activeChatAgentId, setActiveChatAgentId] = useState<string | null>(null);
     const [isChangeRequestOpen, setIsChangeRequestOpen] = useState(false);
     const [isAddAgentModalOpen, setIsAddAgentModalOpen] = useState(false);
+    const [selectedAgentForEdit, setSelectedAgentForEdit] = useState<Agent | undefined>(undefined);
 
     // Review State (Mock for now until API implemented)
     const [pendingRequests, setPendingRequests] = useState<ReviewRequest[]>(mockPending);
@@ -143,14 +144,33 @@ export default function ProjectDetailsPage() {
         // Ideally save this state to backend via updateProject
     };
 
-    const handleAddAgent = async (agentData: { name: string; role: string; capabilities: string[]; model?: string; goal?: string }) => {
+    const handleSaveAgent = async (agentData: { name: string; role: string; capabilities: string[]; model?: string; goal?: string }) => {
         try {
-            const newAgent = await ProjectService.createAgent(projectId, agentData);
-            setProjectAgents([...projectAgents, newAgent]);
+            if (selectedAgentForEdit) {
+                // Update existing
+                const updatedAgent = await ProjectService.updateAgent(projectId, selectedAgentForEdit.id, agentData);
+                setProjectAgents(projectAgents.map(a => a.id === updatedAgent.id ? updatedAgent : a));
+            } else {
+                // Create new
+                const newAgent = await ProjectService.createAgent(projectId, agentData);
+                setProjectAgents([...projectAgents, newAgent]);
+            }
+            setIsAddAgentModalOpen(false);
+            setSelectedAgentForEdit(undefined);
         } catch (error) {
-            console.error("Failed to create agent:", error);
-            alert("Failed to create agent");
+            console.error("Failed to save agent:", error);
+            alert("Failed to save agent");
         }
+    };
+
+    const openAddAgentModal = () => {
+        setSelectedAgentForEdit(undefined);
+        setIsAddAgentModalOpen(true);
+    };
+
+    const openEditAgentModal = (agent: Agent) => {
+        setSelectedAgentForEdit(agent);
+        setIsAddAgentModalOpen(true);
     };
 
     const openCreateTaskModal = (status: string = 'todo') => {
@@ -253,8 +273,12 @@ export default function ProjectDetailsPage() {
 
             <AddAgentModal
                 isOpen={isAddAgentModalOpen}
-                onClose={() => setIsAddAgentModalOpen(false)}
-                onSave={handleAddAgent}
+                onClose={() => {
+                    setIsAddAgentModalOpen(false);
+                    setSelectedAgentForEdit(undefined);
+                }}
+                onSave={handleSaveAgent}
+                initialAgent={selectedAgentForEdit}
             />
 
             <div className="space-y-6 h-full flex flex-col p-6 pt-2">
@@ -408,7 +432,8 @@ export default function ProjectDetailsPage() {
                             agents={projectAgents}
                             onUpdateAgent={handleUpdateAgent}
                             onMessage={(agent) => setActiveChatAgentId(agent.id)}
-                            onAddAgent={() => setIsAddAgentModalOpen(true)}
+                            onAddAgent={openAddAgentModal}
+                            onEditAgent={openEditAgentModal}
                         />
                     )}
                     {view === 'GRAPH' && (

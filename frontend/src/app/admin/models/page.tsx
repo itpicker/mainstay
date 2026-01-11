@@ -13,6 +13,8 @@ export default function AdminModelsPage() {
     const [newName, setNewName] = useState('');
     const [newModelId, setNewModelId] = useState('');
     const [newProvider, setNewProvider] = useState('OPENAI');
+    const [newApiKey, setNewApiKey] = useState('');
+    const [newBaseUrl, setNewBaseUrl] = useState('');
     const [isFormOpen, setIsFormOpen] = useState(false);
 
     useEffect(() => {
@@ -37,13 +39,17 @@ export default function AdminModelsPage() {
             const newModel = await AdminService.createModel({
                 name: newName,
                 model_id: newModelId,
-                provider: newProvider
+                provider: newProvider,
+                api_key: newApiKey || undefined,
+                base_url: newBaseUrl || undefined
             });
             setModels([...models, newModel]);
             setIsFormOpen(false);
             setNewName('');
             setNewModelId('');
             setNewProvider('OPENAI');
+            setNewApiKey('');
+            setNewBaseUrl('');
         } catch (error) {
             console.error("Failed to create model:", error);
             alert("Failed to create model");
@@ -122,6 +128,26 @@ export default function AdminModelsPage() {
                                 <option value="GOOGLE">Google</option>
                                 <option value="OTHER">Other</option>
                             </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-muted-foreground">API Key (Optional)</label>
+                            <input
+                                type="password"
+                                value={newApiKey}
+                                onChange={(e) => setNewApiKey(e.target.value)}
+                                placeholder="sk-..."
+                                className="w-full px-3 py-2 bg-background border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-muted-foreground">Base URL (For Ollama etc.)</label>
+                            <input
+                                type="text"
+                                value={newBaseUrl}
+                                onChange={(e) => setNewBaseUrl(e.target.value)}
+                                placeholder="e.g. http://localhost:11434"
+                                className="w-full px-3 py-2 bg-background border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            />
                         </div>
                         <button
                             type="submit"

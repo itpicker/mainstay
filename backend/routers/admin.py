@@ -17,6 +17,8 @@ class AIModelBase(BaseModel):
     name: str
     model_id: str
     provider: str
+    api_key: Optional[str] = None
+    base_url: Optional[str] = None
     is_active: bool = True
 
 class AIModelCreate(AIModelBase):

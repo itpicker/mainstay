@@ -18,9 +18,10 @@ interface AddAgentModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (agentData: { name: string; role: string; capabilities: string[]; model?: string; goal?: string }) => Promise<void>;
+    initialAgent?: Agent;
 }
 
-export function AddAgentModal({ isOpen, onClose, onSave }: AddAgentModalProps) {
+export function AddAgentModal({ isOpen, onClose, onSave, initialAgent }: AddAgentModalProps) {
     const [name, setName] = useState('');
     const [role, setRole] = useState('DEVELOPER');
     const [customRole, setCustomRole] = useState('');
@@ -37,8 +38,35 @@ export function AddAgentModal({ isOpen, onClose, onSave }: AddAgentModalProps) {
     useEffect(() => {
         if (isOpen) {
             loadModels();
+            if (initialAgent) {
+                // Edit Mode Override
+                setName(initialAgent.name);
+
+                const isStandard = initialAgent.role in ROLE_TEMPLATES;
+                if (isStandard) {
+                    setRole(initialAgent.role);
+                    setIsCustomRole(false);
+                } else {
+                    setRole('CUSTOM');
+                    setIsCustomRole(true);
+                    setCustomRole(initialAgent.role);
+                }
+
+                setModel(initialAgent.model || '');
+                setGoal(initialAgent.goal || '');
+                setCapabilitiesInput(initialAgent.capabilities.join(', '));
+            } else {
+                // Reset for Create Mode
+                setName('');
+                setRole('DEVELOPER');
+                setCustomRole('');
+                setIsCustomRole(false);
+                setModel('');
+                setGoal(ROLE_TEMPLATES['DEVELOPER']);
+                setCapabilitiesInput('');
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, initialAgent]);
 
     const loadModels = async () => {
         setIsLoadingModels(true);
@@ -103,13 +131,18 @@ export function AddAgentModal({ isOpen, onClose, onSave }: AddAgentModalProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="w-full max-w-md bg-background border border-border rounded-xl shadow-xl overflow-hidden animate-in zoom-in-50 duration-200">
                 <div className="flex items-center justify-between p-4 border-b border-border">
-                    <h2 className="text-lg font-semibold">Add New Agent</h2>
+                    <h2 className="text-lg font-semibold">{initialAgent ? "Edit Agent" : "Add New Agent"}</h2>
                     <button onClick={onClose} className="p-1 hover:bg-secondary rounded-lg transition-colors">
                         <X className="h-5 w-5 text-muted-foreground" />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    {/* ... (inputs unchanged) ... */}
+
+                    {/* (skipping to button for brevity in search, but have to match target carefully) */}
+
+                    {/* Wait, multi_replace is safer or bigger chunks. I will match valid chunks. */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground">Agent Name</label>
                         <input
@@ -231,7 +264,7 @@ export function AddAgentModal({ isOpen, onClose, onSave }: AddAgentModalProps) {
                             className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                         >
                             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                            Create Agent
+                            {initialAgent ? "Save Changes" : "Create Agent"}
                         </button>
                     </div>
                 </form>

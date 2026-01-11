@@ -5,6 +5,8 @@ export interface AIModel {
     name: string;
     model_id: string;
     provider: 'OPENAI' | 'ANTHROPIC' | 'OLLAMA' | 'OTHER';
+    api_key?: string;
+    base_url?: string;
     is_active: boolean;
     created_at: string;
 }
@@ -34,7 +36,7 @@ export const AdminService = {
         return response.data;
     },
 
-    createModel: async (data: { name: string; model_id: string; provider: string }): Promise<AIModel> => {
+    createModel: async (data: { name: string; model_id: string; provider: string; api_key?: string; base_url?: string }): Promise<AIModel> => {
         const response = await api.post<AIModel>('/admin/models', data);
         return response.data;
     },

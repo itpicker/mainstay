@@ -47,5 +47,10 @@ export const ProjectService = {
     createAgent: async (projectId: string, data: { name: string; role: string; capabilities: string[]; model?: string; goal?: string }): Promise<Agent> => {
         const response = await api.post<Agent>(`/projects/${projectId}/agents`, data);
         return response.data;
+    },
+
+    updateAgent: async (projectId: string, agentId: string, data: Partial<Agent>): Promise<Agent> => {
+        const response = await api.patch<Agent>(`/projects/${projectId}/agents/${agentId}`, data);
+        return response.data;
     }
 };
