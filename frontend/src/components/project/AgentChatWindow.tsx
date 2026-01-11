@@ -61,25 +61,36 @@ export function AgentChatWindow({ agent, onClose }: AgentChatWindowProps) {
         setInputValue('');
         setIsTyping(true);
 
-        try {
-            const responseText = await ChatService.sendMessage(agent.id, userMsg.content, currentHistory);
+        const agentMsgId = (Date.now() + 1).toString();
+        // Placeholder for Agent message
+        const agentMsg: Message = {
+            id: agentMsgId,
+            role: 'agent',
+            content: '',
+            timestamp: Date.now()
+        };
+        setMessages(prev => [...prev, agentMsg]);
 
-            const agentMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'agent',
-                content: responseText,
-                timestamp: Date.now()
-            };
-            setMessages(prev => [...prev, agentMsg]);
+        try {
+            await ChatService.streamMessage(agent.id, userMsg.content, currentHistory, (chunk) => {
+                setMessages(prev => prev.map(msg => {
+                    if (msg.id === agentMsgId) {
+                        return { ...msg, content: msg.content + chunk };
+                    }
+                    return msg;
+                }));
+                setIsTyping(false); // Stop typing indicator as soon as first chunk arrives
+            });
         } catch (error) {
             console.error("Chat Error:", error);
-            const errorMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'agent',
-                content: "I'm having trouble connecting to my brain right now. Please try again later.",
-                timestamp: Date.now()
-            };
-            setMessages(prev => [...prev, errorMsg]);
+            // If failed empty, show error. If partially filled, maybe just stop? 
+            // Better to show error message separately if completely failed.
+            setMessages(prev => prev.map(msg => {
+                if (msg.id === agentMsgId && msg.content === '') {
+                    return { ...msg, content: "I'm having trouble thinking right now. Please try again." };
+                }
+                return msg;
+            }));
         } finally {
             setIsTyping(false);
         }
@@ -179,7 +190,11 @@ export function AgentChatWindow({ agent, onClose }: AgentChatWindowProps) {
                     <input
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                handleSendMessage();
+                            }
+                        }}
                         placeholder="Type a message..."
                         className="flex-1 bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                         autoFocus

@@ -11,8 +11,8 @@ const getAuthToken = async () => {
 };
 
 export const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-    timeout: 10000, // 10s timeout to prevent infinite hang
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
+    timeout: 60000, // 60s timeout for LLM calls
     headers: {
         'Content-Type': 'application/json',
     },
