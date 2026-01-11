@@ -7,7 +7,7 @@ import { Mail, Lock, User, Loader2, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function SignUpPage() {
-    const { login } = useAuth();
+    const { signup } = useAuth();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -16,11 +16,14 @@ export default function SignUpPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        // For mock auth, signup is same as login
-        login(email);
-        setIsLoading(false);
+        try {
+            await signup(email, password, name);
+        } catch (error) {
+            console.error("Signup failed:", error);
+            alert("Failed to sign up: " + (error as Error).message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (

@@ -15,10 +15,14 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        login(email);
-        setIsLoading(false);
+        try {
+            await login(email, password);
+        } catch (error) {
+            console.error("Login failed:", error);
+            alert("Failed to sign in: " + (error as Error).message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -93,7 +97,7 @@ export default function LoginPage() {
             </div>
 
             <div className="mt-8 pt-6 border-t border-white/5 text-[10px] text-center text-muted-foreground/50">
-                Protected by Mock Authentication System v1.0
+                Secured by Supabase Auth
             </div>
         </div>
     );
