@@ -11,16 +11,22 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     Returns the user dictionary if valid.
     """
     token = credentials.credentials
+    # print(f"DEBUG: Verifying token: {token[:10]}...") 
     try:
         # Supabase-py's auth.get_user(token) verifies the JWT
         user_response = supabase.auth.get_user(token)
+        # print(f"DEBUG: User verified: {user_response.user.id}")
         return user_response.user
     except AuthApiError as e:
+        print(f"DEBUG: Auth Error: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid authentication credentials: {e.message}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    except Exception as e:
+        print(f"DEBUG: Unexpected Auth Error: {e}")
+        raise e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

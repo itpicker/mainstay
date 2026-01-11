@@ -17,9 +17,12 @@ router = APIRouter(
 @router.get("/", response_model=List[ProjectResponse])
 def get_projects(user = Depends(get_current_user)):
     """List all projects for the current user."""
+    print(f"DEBUG: get_projects called for user {user.id}")
     try:
         # Fetch projects where owner_id is the current user
+        print("DEBUG: Executing supabase query...")
         response = supabase.table("projects").select("*").eq("owner_id", user.id).execute()
+        print(f"DEBUG: Query result count: {len(response.data) if response.data else 0}")
         return response.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -27,19 +30,61 @@ def get_projects(user = Depends(get_current_user)):
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 def create_project(project: ProjectCreate, user = Depends(get_current_user)):
     """Create a new project."""
+    new_project = {
+        "title": project.title,
+        "description": project.description,
+        "owner_id": user.id,
+        "status": "PLANNING"
+    }
+    
+    created_project = None
+    
     try:
-        new_project = {
-            "title": project.title,
-            "description": project.description,
-            "owner_id": user.id,
-            "status": "PLANNING"
-        }
         response = supabase.table("projects").insert(new_project).execute()
-        if not response.data:
-            raise HTTPException(status_code=500, detail="Failed to create project")
-        return response.data[0]
+        if response.data:
+            created_project = response.data[0]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Check for Foreign Key violation (common if profile is missing)
+        if "foreign key constraint" in str(e).lower():
+            print(f"DEBUG: Foreign key error. Attempting to create missing profile for {user.id}")
+            try:
+                # Self-healing: Create the missing profile
+                profile_data = {
+                    "id": user.id,
+                    "email": user.email,
+                    "full_name": user.user_metadata.get("full_name", "") if user.user_metadata else "",
+                    "avatar_url": user.user_metadata.get("avatar_url", "") if user.user_metadata else ""
+                }
+                supabase.table("profiles").insert(profile_data).execute()
+                
+                # Retry project creation
+                response = supabase.table("projects").insert(new_project).execute()
+                if response.data:
+                    created_project = response.data[0]
+            except Exception as inner_e:
+                print(f"DEBUG: Failed to recover profile: {inner_e}")
+                raise HTTPException(status_code=500, detail="User profile mismatch. Please contact support or re-register.")
+        else:
+            raise e
+
+    if not created_project:
+        raise HTTPException(status_code=500, detail="Failed to create project")
+
+    # Seed default agents
+    project_id = created_project['id']
+    default_agents = [
+        {"project_id": project_id, "name": "Alpha-PM", "role": "MANAGER", "status": "IDLE", "capabilities": ["planning", "management"]},
+        {"project_id": project_id, "name": "Beta-Dev", "role": "DEVELOPER", "status": "IDLE", "capabilities": ["coding", "debugging"]},
+        {"project_id": project_id, "name": "Gamma-Res", "role": "RESEARCHER", "status": "IDLE", "capabilities": ["search", "analysis"]},
+        {"project_id": project_id, "name": "Delta-Des", "role": "DESIGNER", "status": "IDLE", "capabilities": ["ui/ux", "visuals"]}
+    ]
+    try:
+        supabase.table("agents").insert(default_agents).execute()
+    except Exception as agent_e:
+        print(f"Warning: Failed to seed agents: {agent_e}")
+        # Non-blocking, return project anyway
+
+        return created_project
 
 @router.get("/{project_id}", response_model=ProjectResponse)
 def get_project(project_id: UUID, user = Depends(get_current_user)):

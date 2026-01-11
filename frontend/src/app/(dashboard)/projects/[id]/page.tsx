@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowLeft, Play, Pause } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Play, Pause, Sparkles, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Task, Agent, Project, ProjectStage, TaskStatus, ReviewRequest, ChangeRequest } from '@/lib/types';
+import { Task, Agent, Project, ProjectStage, ReviewRequest, ChangeRequest } from '@/lib/types';
 import { mockPending, mockHistory, mockChanges } from '@/lib/mock-data';
 import { ProjectKanban } from '@/components/project/ProjectKanban';
 import { ViewSwitcher, ProjectView } from '@/components/project/ViewSwitcher';
@@ -13,14 +13,13 @@ import { ProjectArtifacts } from '@/components/project/ProjectArtifacts';
 import { CreateTaskModal } from '@/components/project/CreateTaskModal';
 import { TaskDetailModal } from '@/components/project/TaskDetailModal';
 import { ProjectReviews } from '@/components/project/ProjectReviews';
-import { ProjectPhaseHeader } from '@/components/project/ProjectPhaseHeader';
 import { ChangeRequestModal } from '@/components/project/ChangeRequestModal';
 import { TaskDependencyGraph } from '@/components/project/TaskDependencyGraph';
 import { ProjectTeam } from '@/components/project/ProjectTeam';
 import { PlanningChat } from '@/components/project/PlanningChat';
-import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AgentChatWindow } from '@/components/project/AgentChatWindow';
+import { ProjectService } from '@/lib/api/projects';
 
 const initialStages: ProjectStage[] = [
     { id: 'todo', name: 'To Do', color: 'bg-slate-500' },
@@ -29,127 +28,80 @@ const initialStages: ProjectStage[] = [
     { id: 'done', name: 'Done', color: 'bg-green-500' },
 ];
 
-const mockProject: Project = {
-    id: '1',
-    workspaceId: 'ws-toss',
-    name: 'Website Redesign',
-    description: 'Overhaul of the corporate website with new branding.',
-    workflowTemplateId: 'SOFTWARE_DEV', // Explicit Template
-    status: 'ACTIVE',
-    lifecycle: 'EXECUTION', // Initial state
-    workflowStage: 'IMPLEMENTATION', // Testing Workflow Visualizer
-    isPlanningFrozen: true,
-    planningFrozenAt: '2025-12-05T10:00:00Z',
-    isAgentsActive: false, // New Dynamic Locking Field
-    createdAt: '2025-12-01',
-    taskCount: 3,
-    completedTaskCount: 1,
-    stages: initialStages
-};
-
-// Updated Mock Tasks with dates and artifacts
-const initialTasks: Task[] = [
-    {
-        id: '101',
-        projectId: '1',
-        title: 'Define Brand Guidelines',
-        description: 'Create color palette and typography.',
-        status: 'done',
-        priority: 'HIGH',
-        assignedAgentId: '4',
-        startDate: '2025-12-01',
-        endDate: '2025-12-05',
-        subtasks: [
-            { id: 's1', title: 'Research competitors', completed: true },
-            { id: 's2', title: 'Draft color palette', completed: true },
-            { id: 's3', title: 'Select typography', completed: true },
-        ],
-        activeReviewRequestId: 'rev-1', // Linked to Brand Guidelines PDF Review
-        artifacts: [
-            { id: 'a1', name: 'brand_guidelines.pdf', type: 'DOCUMENT', url: '#', createdAt: '2025-12-05', status: 'READY' },
-            { id: 'a2', name: 'logo_assets.zip', type: 'ARCHIVE', url: '#', createdAt: '2025-12-04', status: 'READY' }
-        ],
-    },
-    {
-        id: '102',
-        projectId: '1',
-        title: 'Develop Home Page',
-        description: 'Implement the landing page in Next.js.',
-        status: 'in_progress',
-        priority: 'HIGH',
-        assignedAgentId: '2',
-        startDate: '2025-12-06',
-        endDate: '2025-12-20',
-        subtasks: [
-            { id: 's4', title: 'Setup layout', completed: true },
-            { id: 's5', title: 'Implement hero section', completed: false },
-            { id: 's6', title: 'Add responsive styles', completed: false },
-        ],
-        activeReviewRequestId: 'rev-2', // Linked to Database Architecture Decision
-        artifacts: [
-            {
-                id: 'a3', name: 'homepage_component.tsx', type: 'CODE', url: '#', createdAt: '2025-12-10',
-                status: 'READY', metadata: { branch: 'feat/home-page', commitHash: '8a2b9f1' }
-            },
-            {
-                id: 'a4', name: 'Staging Deployment', type: 'DEPLOYMENT', url: 'https://staging.example.com', createdAt: '2025-12-11',
-                status: 'ONLINE', metadata: { environment: 'STAGING', version: 'v1.0.2-beta', testStatus: 'PASS' }
-            }
-        ],
-        dependencies: ['101'] // Depends on Brand Guidelines
-    },
-    {
-        id: '103',
-        projectId: '1',
-        title: 'Write Content',
-        description: 'Draft copy for the about page.',
-        status: 'todo',
-        priority: 'MEDIUM',
-        startDate: '2025-12-21',
-        endDate: '2025-12-25',
-        subtasks: []
-    },
-];
-
-const mockAgents: Agent[] = [
-    { id: '1', name: 'Alpha-1', role: 'MANAGER', status: 'BUSY', capabilities: [] },
-    { id: '2', name: 'Beta-Dev', role: 'DEVELOPER', status: 'IDLE', capabilities: [] },
-    { id: '3', name: 'Gamma-Res', role: 'RESEARCHER', status: 'IDLE', capabilities: [] },
-    { id: '4', name: 'Delta-Des', role: 'DESIGNER', status: 'OFFLINE', capabilities: [] },
-];
-
 export default function ProjectDetailsPage() {
-    const [tasks, setTasks] = useState(initialTasks);
+    const params = useParams();
+    const projectId = params.id as string;
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [project, setProject] = useState<Project | null>(null);
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [projectAgents, setProjectAgents] = useState<Agent[]>([]);
+
+    // UI State
     const [stages, setStages] = useState(initialStages);
-    // Initialize project agents with default autonomy level 3
-    const [projectAgents, setProjectAgents] = useState<Agent[]>(mockAgents.map(a => ({ ...a, autonomyLevel: 3 })));
     const [view, setView] = useState<ProjectView>('TABLE');
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [newTaskStatus, setNewTaskStatus] = useState<string>('todo');
-    const [project, setProject] = useState<Project>(mockProject);
-
-    // New state for task details
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-
-    // AI Planning State
     const [isPlanningMode, setIsPlanningMode] = useState(false);
     const [ghostTasks, setGhostTasks] = useState<Task[]>([]);
-
-    // Agent Chat State
     const [activeChatAgentId, setActiveChatAgentId] = useState<string | null>(null);
+    const [isChangeRequestOpen, setIsChangeRequestOpen] = useState(false);
 
-    const params = useParams();
+    // Review State (Mock for now until API implemented)
+    const [pendingRequests, setPendingRequests] = useState<ReviewRequest[]>(mockPending);
+    const [reviewHistory, setReviewHistory] = useState<ReviewRequest[]>(mockHistory);
+    const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>(mockChanges);
 
-    const handleAssign = (taskId: string, agentId: string) => {
-        setTasks(tasks.map(t => t.id === taskId ? { ...t, assignedAgentId: agentId } : t));
+    // Load Data
+    useEffect(() => {
+        const loadProjectData = async () => {
+            setIsLoading(true);
+            try {
+                const [pData, tData, aData] = await Promise.all([
+                    ProjectService.getProject(projectId),
+                    ProjectService.getTasks(projectId),
+                    ProjectService.getTeam(projectId)
+                ]);
+
+                // Mapper to align API fields to UI fields if necessary
+                const mappedProject = {
+                    ...pData,
+                    name: (pData as any).title || pData.name, // Handle title vs name
+                    createdAt: (pData as any).created_at, // Map snake_case to camelCase
+                };
+
+                setProject(mappedProject);
+                setTasks(tData);
+                setProjectAgents(aData);
+            } catch (error) {
+                console.error("Failed to load project details:", error);
+                // Handle 404 or other errors
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (projectId) {
+            loadProjectData();
+        }
+    }, [projectId]);
+
+    // Handlers
+    const handleAssign = async (taskId: string, agentId: string) => {
+        try {
+            const updatedTask = await ProjectService.updateTask(taskId, { assignedAgentId: agentId });
+            setTasks(tasks.map(t => t.id === taskId ? updatedTask : t));
+        } catch (error) {
+            console.error("Failed to assign agent:", error);
+        }
     };
 
     const handleUpdateAgent = (updatedAgent: Agent) => {
         setProjectAgents(projectAgents.map(a => a.id === updatedAgent.id ? updatedAgent : a));
     };
 
-    // Stage Management Handlers
     const handleAddStage = (name: string) => {
         const newStage: ProjectStage = {
             id: name.toLowerCase().replace(/\s+/g, '_'),
@@ -167,19 +119,30 @@ export default function ProjectDetailsPage() {
         setStages(stages.filter(s => s.id !== stageId));
     };
 
-    const handleTaskMove = (taskId: string, newStatus: string) => {
+    const handleTaskMove = async (taskId: string, newStatus: string) => {
+        // Optimistic update
+        const originalTasks = [...tasks];
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+
+        try {
+            await ProjectService.updateTask(taskId, { status: newStatus });
+        } catch (error) {
+            console.error("Failed to move task:", error);
+            setTasks(originalTasks); // Revert
+        }
     };
 
     const toggleAgentActivity = () => {
-        setProject(prev => ({
+        if (!project) return;
+        setProject(prev => prev ? ({
             ...prev,
             isAgentsActive: !prev.isAgentsActive
-        }));
+        }) : null);
+        // Ideally save this state to backend via updateProject
     };
 
     const openCreateTaskModal = (status: string = 'todo') => {
-        if (project.isAgentsActive) {
+        if (project?.isAgentsActive) {
             alert("Planning is locked while Agents are active. Please pause operations to modify the plan.");
             return;
         }
@@ -187,7 +150,7 @@ export default function ProjectDetailsPage() {
         setIsTaskModalOpen(true);
     };
 
-    const handleCreateTask = (taskData: {
+    const handleCreateTask = async (taskData: {
         title: string;
         description: string;
         priority: 'LOW' | 'MEDIUM' | 'HIGH';
@@ -196,21 +159,20 @@ export default function ProjectDetailsPage() {
         startDate?: string;
         endDate?: string;
     }) => {
-        const newTask: Task = {
-            id: Math.random().toString(36).substr(2, 9),
-            projectId: mockProject.id,
-            title: taskData.title,
-            description: taskData.description,
-            status: newTaskStatus,
-            priority: taskData.priority,
-            assignedAgentId: taskData.assignedAgentId,
-            startDate: taskData.startDate,
-            endDate: taskData.endDate,
-            subtasks: taskData.subtasks || [],
-            createdAt: new Date().toISOString()
-        } as any;
-
-        setTasks([...tasks, newTask]);
+        try {
+            const newTask = await ProjectService.createTask(projectId, {
+                title: taskData.title,
+                description: taskData.description,
+                priority: taskData.priority,
+                status: newTaskStatus,
+                assignedAgentId: taskData.assignedAgentId
+                // Note: subtasks, dates not yet supported fully in backend create DTO, will add later
+            });
+            setTasks([...tasks, newTask]);
+        } catch (error) {
+            console.error("Failed to create task:", error);
+            alert("Failed to create task");
+        }
     };
 
     const openTaskDetail = (task: Task) => {
@@ -218,24 +180,30 @@ export default function ProjectDetailsPage() {
         setIsDetailModalOpen(true);
     };
 
-    const handleTaskUpdate = (updatedTask: Task) => {
-        setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
-        setSelectedTask(updatedTask);
+    const handleTaskUpdate = async (updatedTaskInput: Task) => {
+        try {
+            const updatedTask = await ProjectService.updateTask(updatedTaskInput.id, {
+                title: updatedTaskInput.title,
+                description: updatedTaskInput.description,
+                status: updatedTaskInput.status,
+                priority: updatedTaskInput.priority,
+                assignedAgentId: updatedTaskInput.assignedAgentId
+            });
+            setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+            setSelectedTask(updatedTask);
+        } catch (error) {
+            console.error("Failed to update task:", error);
+        }
     };
 
-    // Review State (Lifted Up)
-    const [pendingRequests, setPendingRequests] = useState<ReviewRequest[]>(mockPending);
-    const [reviewHistory, setReviewHistory] = useState<ReviewRequest[]>(mockHistory);
-    const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>(mockChanges);
-
     const handleReviewAction = (requestId: string, action: 'APPROVED' | 'CHANGES_REQUESTED' | 'REJECTED', optionId?: string) => {
+        // Mock implementation maintained for reviews until backend supports it
         const request = pendingRequests.find(r => r.id === requestId);
         if (!request) return;
 
-        // Move to history
         const updatedRequest = {
             ...request,
-            status: action !== 'APPROVED' ? action : 'APPROVED' as const, // Fix type error
+            status: action !== 'APPROVED' ? action : 'APPROVED' as const,
             selectedOptionId: optionId,
             feedback: optionId ? `Selected option: ${optionId}` : `Marked as ${action}`
         };
@@ -243,20 +211,11 @@ export default function ProjectDetailsPage() {
         setReviewHistory([updatedRequest, ...reviewHistory]);
         setPendingRequests(pendingRequests.filter(r => r.id !== requestId));
 
-        // Update task status if needed
         const task = tasks.find(t => t.activeReviewRequestId === requestId);
         if (task) {
-            handleTaskUpdate({ ...task, activeReviewRequestId: undefined });
+            // handleTaskUpdate({ ...task, activeReviewRequestId: undefined });
+            // Should call API here
         }
-    };
-
-    // Deprecated but kept mapping if needed, or removed if unused.
-    // toggleAgentActivity replaces freeze planning.
-
-    const [isChangeRequestOpen, setIsChangeRequestOpen] = useState(false);
-
-    const handleRequestChange = () => {
-        setIsChangeRequestOpen(true);
     };
 
     const handleSubmitChangeRequest = (data: { title: string; description: string; impact: string }) => {
@@ -264,10 +223,16 @@ export default function ProjectDetailsPage() {
         alert("Change Request Submitted! Planning is now temporarily unlocked for review.");
     };
 
+    if (isLoading) {
+        return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    }
+
+    if (!project) {
+        return <div className="text-center p-10">Project not found</div>;
+    }
+
     return (
         <div className="flex flex-col h-full">
-            {/* Phase Header Removed */}
-
             <ChangeRequestModal
                 isOpen={isChangeRequestOpen}
                 onClose={() => setIsChangeRequestOpen(false)}
@@ -279,7 +244,7 @@ export default function ProjectDetailsPage() {
                     isOpen={isTaskModalOpen}
                     onClose={() => setIsTaskModalOpen(false)}
                     onSave={handleCreateTask}
-                    agents={mockAgents}
+                    agents={projectAgents} // Use real agents
                     defaultStatus={newTaskStatus}
                 />
 
@@ -288,7 +253,7 @@ export default function ProjectDetailsPage() {
                     isOpen={isDetailModalOpen}
                     onClose={() => setIsDetailModalOpen(false)}
                     onUpdate={handleTaskUpdate}
-                    agents={mockAgents}
+                    agents={projectAgents}
                     reviewRequests={pendingRequests}
                     onReviewAction={handleReviewAction}
                 />
@@ -358,7 +323,7 @@ export default function ProjectDetailsPage() {
                         <div className="flex-1 flex min-w-0">
                             <ProjectKanban
                                 tasks={[...tasks, ...ghostTasks]}
-                                agents={mockAgents}
+                                agents={projectAgents}
                                 stages={stages}
                                 onAssign={handleAssign}
                                 onCreateTask={openCreateTaskModal}
@@ -376,6 +341,7 @@ export default function ProjectDetailsPage() {
                                         setTasks([...tasks, ...newTasks]);
                                         setGhostTasks([]);
                                         setIsPlanningMode(false);
+                                        // TODO: Should bulk create tasks via API
                                     }}
                                 />
                             )}
@@ -385,7 +351,7 @@ export default function ProjectDetailsPage() {
                         <div className="flex-1 flex min-w-0">
                             <ProjectTable
                                 tasks={[...tasks, ...ghostTasks]}
-                                agents={mockAgents}
+                                agents={projectAgents}
                                 stages={stages}
                                 onTaskClick={openTaskDetail}
                                 onCreateTask={openCreateTaskModal}
@@ -400,6 +366,7 @@ export default function ProjectDetailsPage() {
                                         setTasks([...tasks, ...newTasks]);
                                         setGhostTasks([]);
                                         setIsPlanningMode(false);
+                                        // TODO: Should bulk create tasks via API
                                     }}
                                 />
                             )}
@@ -411,7 +378,7 @@ export default function ProjectDetailsPage() {
                     {view === 'REVIEWS' && (
                         <ProjectReviews
                             projectId={project.id}
-                            agents={mockAgents}
+                            agents={projectAgents}
                             pendingRequests={pendingRequests}
                             history={reviewHistory}
                             changeRequests={changeRequests}
@@ -426,7 +393,7 @@ export default function ProjectDetailsPage() {
                         />
                     )}
                     {view === 'GRAPH' && (
-                        <TaskDependencyGraph tasks={tasks} agents={mockAgents} />
+                        <TaskDependencyGraph tasks={tasks} agents={projectAgents} />
                     )}
                 </div>
             </div>
@@ -434,7 +401,7 @@ export default function ProjectDetailsPage() {
             {/* Global Chat Window */}
             {activeChatAgentId && (
                 <AgentChatWindow
-                    agent={mockAgents.find(a => a.id === activeChatAgentId)!}
+                    agent={projectAgents.find(a => a.id === activeChatAgentId)!}
                     onClose={() => setActiveChatAgentId(null)}
                 />
             )}

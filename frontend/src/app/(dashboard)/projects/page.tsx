@@ -10,23 +10,42 @@ import { ProjectService } from '@/lib/api/projects';
 export default function ProjectsPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [debug, setDebug] = useState("Init"); // Debug state
 
     useEffect(() => {
         const fetchProjects = async () => {
+            setDebug("Starting fetchProjects...");
+            setError(null);
             try {
+                setDebug("Calling API (ProjectService.getAllProjects)...");
                 const data = await ProjectService.getAllProjects();
-                // Map API response to UI type if key names mismatch (API uses title, UI uses name)
+
+                setDebug(`API Responded. Items: ${Array.isArray(data) ? data.length : 'Not Array'}`);
+
+                // Map API response
+                setDebug("Mapping data...");
                 const mappedProjects = data.map((p: any) => ({
                     ...p,
                     name: p.title,
-                    workspaceId: 'default', // Default workspace for now
-                    taskCount: 0, // Not yet returned by API
+                    description: p.description || "",
+                    createdAt: p.created_at,
+                    workspaceId: 'default',
+                    status: p.status || 'PLANNING',
+                    lifecycle: 'PLANNING',
+                    isAgentsActive: false,
+                    stages: [],
+                    taskCount: 0,
                     completedTaskCount: 0
                 }));
                 setProjects(mappedProjects);
-            } catch (error) {
-                console.error("Failed to fetch projects:", error);
+                setDebug("State updated.");
+            } catch (err: any) {
+                console.error("Failed to fetch projects:", err);
+                setDebug(`Error caught: ${err.message}`);
+                setError("Failed to load projects. Please check your connection.");
             } finally {
+                setDebug("Finally block reached.");
                 setIsLoading(false);
             }
         };
@@ -36,11 +55,30 @@ export default function ProjectsPage() {
 
     if (isLoading) {
         return (
-            <div className="flex h-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex flex-col h-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <p className="text-sm font-mono text-muted-foreground">Debug: {debug}</p>
             </div>
         );
     }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full space-y-4">
+                <AlertCircle className="h-10 w-10 text-destructive" />
+                <p className="text-lg font-medium text-destructive">{error}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-secondary rounded-lg hover:bg-secondary/80"
+                >
+                    Retry
+                </button>
+            </div>
+        );
+    }
+
+    // DEBUG: Dump state to see if data exists
+    // return <pre className="text-xs text-left overflow-auto h-96">{JSON.stringify({ projects, isLoading, error }, null, 2)}</pre>;
 
     return (
         <div className="space-y-10">
@@ -58,9 +96,6 @@ export default function ProjectsPage() {
                 </Link>
             </div>
 
-            {/* Waiting for You Section - Placeholder for now */}
-            {/* ... */}
-
             <div className="space-y-4">
                 <div className="flex items-center space-x-2 border-b border-border/40 pb-2">
                     <h2 className="text-lg font-semibold text-foreground/90">My Projects</h2>
@@ -68,6 +103,7 @@ export default function ProjectsPage() {
 
                 {projects.length === 0 ? (
                     <div className="text-center py-20 bg-secondary/10 rounded-xl border border-dashed border-white/10">
+                        <Folder className="h-10 w-10 mx-auto text-muted-foreground mb-3 opacity-50" />
                         <p className="text-muted-foreground">No projects found. Create one to get started.</p>
                     </div>
                 ) : (
@@ -88,7 +124,7 @@ export default function ProjectsPage() {
                                     </div>
 
                                     <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">{project.name}</h3>
-                                    <p className="text-sm text-muted-foreground mb-6 line-clamp-2">{project.description}</p>
+                                    <p className="text-sm text-muted-foreground mb-6 line-clamp-2 min-h-[2.5rem]">{project.description || "No description provided"}</p>
 
                                     <div className="mt-auto pt-4 border-t border-dashed border-white/10 flex items-center justify-between text-sm text-muted-foreground">
                                         <div className="flex items-center">
