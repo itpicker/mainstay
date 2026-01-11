@@ -145,30 +145,33 @@ export function AgentChatWindow({ agent, onClose }: AgentChatWindowProps) {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/20">
-                {messages.map((msg) => (
-                    <div
-                        key={msg.id}
-                        className={cn(
-                            "flex gap-2 max-w-[85%]",
-                            msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
-                        )}
-                    >
-                        <div className={cn(
-                            "w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px]",
-                            msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                        )}>
-                            {msg.role === 'user' ? <User className="h-3 w-3" /> : <Bot className="h-3 w-3" />}
+                {messages.map((msg) => {
+                    if (!msg.content && msg.role === 'agent') return null;
+                    return (
+                        <div
+                            key={msg.id}
+                            className={cn(
+                                "flex gap-2 max-w-[85%]",
+                                msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
+                            )}
+                        >
+                            <div className={cn(
+                                "w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px]",
+                                msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                            )}>
+                                {msg.role === 'user' ? <User className="h-3 w-3" /> : <Bot className="h-3 w-3" />}
+                            </div>
+                            <div className={cn(
+                                "p-2 rounded-lg text-xs leading-relaxed",
+                                msg.role === 'user'
+                                    ? "bg-primary/20 text-primary-foreground rounded-tr-none"
+                                    : "bg-white/10 text-foreground rounded-tl-none"
+                            )}>
+                                {msg.content}
+                            </div>
                         </div>
-                        <div className={cn(
-                            "p-2 rounded-lg text-xs leading-relaxed",
-                            msg.role === 'user'
-                                ? "bg-primary/20 text-primary-foreground rounded-tr-none"
-                                : "bg-white/10 text-foreground rounded-tl-none"
-                        )}>
-                            {msg.content}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
                 {isTyping && (
                     <div className="flex gap-2">
                         <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center shrink-0 text-[10px]">
