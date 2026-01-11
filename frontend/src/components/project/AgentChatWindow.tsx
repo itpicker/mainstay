@@ -77,23 +77,28 @@ export function AgentChatWindow({ agent, onClose }: AgentChatWindowProps) {
 
         const agentMsgId = (Date.now() + 1).toString();
         // Placeholder for Agent message
-        const agentMsg: Message = {
-            id: agentMsgId,
-            role: 'agent',
-            content: '',
-            timestamp: Date.now()
-        };
-        setMessages(prev => [...prev, agentMsg]);
 
         try {
             await ChatService.streamMessage(agent.id, userMsg.content, currentHistory, (chunk) => {
-                setMessages(prev => prev.map(msg => {
-                    if (msg.id === agentMsgId) {
-                        return { ...msg, content: msg.content + chunk };
+                setMessages(prev => {
+                    const exists = prev.find(msg => msg.id === agentMsgId);
+                    if (exists) {
+                        return prev.map(msg => {
+                            if (msg.id === agentMsgId) {
+                                return { ...msg, content: msg.content + chunk };
+                            }
+                            return msg;
+                        });
+                    } else {
+                        return [...prev, {
+                            id: agentMsgId,
+                            role: 'agent',
+                            content: chunk,
+                            timestamp: Date.now()
+                        }];
                     }
-                    return msg;
-                }));
-                setIsTyping(false); // Stop typing indicator as soon as first chunk arrives
+                });
+                // REMOVED: setIsTyping(false); in loop
             });
         } catch (error) {
             console.error("Chat Error:", error);
@@ -160,7 +165,7 @@ export function AgentChatWindow({ agent, onClose }: AgentChatWindowProps) {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black/20">
                 {messages.map((msg) => {
-                    if (!msg.content && msg.role === 'agent') return null;
+                    // if (!msg.content && msg.role === 'agent') return null;
                     return (
                         <div
                             key={msg.id}

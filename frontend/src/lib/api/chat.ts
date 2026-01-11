@@ -41,27 +41,43 @@ export const ChatService = {
 
         const decoder = new TextDecoder();
 
+        let buffer = '';
+
         while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
 
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
+            if (value) {
+                buffer += decoder.decode(value, { stream: !done });
+            }
+
+            let lines = buffer.split('\n');
+
+            // Should we hold the last line? Only if not done.
+            if (!done) {
+                buffer = lines.pop() || '';
+            } else {
+                buffer = ''; // We are done, process everything
+            }
 
             for (const line of lines) {
+                if (line.trim() === '') continue;
+
                 if (line.startsWith('data: ')) {
                     const dataStr = line.slice(6);
                     if (dataStr === '[DONE]') return;
                     try {
+                        console.log("Processing chunk:", dataStr); // DEBUG
                         const data = JSON.parse(dataStr);
                         if (data.content) {
                             onChunk(data.content);
                         }
                     } catch (e) {
-                        console.error("Error parsing stream chunk", e);
+                        console.error("Error parsing chunk:", dataStr, e);
                     }
                 }
             }
+
+            if (done) break;
         }
     }
 };

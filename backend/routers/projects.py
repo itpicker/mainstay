@@ -87,12 +87,39 @@ def create_project(project: ProjectCreate, user = Depends(get_current_user)):
 def get_project(project_id: UUID, user = Depends(get_current_user)):
     """Get specific project details."""
     try:
+        # Debug Log Start
+        import traceback
+        with open("project_debug.log", "a") as f:
+            f.write(f"DEBUG: get_project hit. ID: {project_id}, User: {user.id}\\n")
+
         # Ensure user owns project (Naive RLS via API check, ideally RLS in DB handles this too)
         response = supabase.table("projects").select("*").eq("id", str(project_id)).eq("owner_id", user.id).execute()
+        
         if not response.data:
+            with open("project_debug.log", "a") as f:
+                 f.write(f"DEBUG: Project not found or access denied.\\n")
             raise HTTPException(status_code=404, detail="Project not found")
-        return response.data[0]
+        
+        data = response.data[0]
+        
+        # Debug Data
+        with open("project_debug.log", "a") as f:
+            f.write(f"DEBUG: Return Data: {data}\\n")
+            
+        # Explicitly validate to catch Pydantic errors here
+        try:
+            ProjectResponse.model_validate(data)
+        except Exception as ve:
+            with open("project_debug.log", "a") as f:
+                f.write(f"VALIDATION ERROR: {str(ve)}\\n")
+            raise ve # Re-raise to be caught by outer except
+
+        return data
     except Exception as e:
+        import traceback
+        with open("project_debug.log", "a") as f:
+            f.write(f"ERROR: {str(e)}\\n")
+            f.write(traceback.format_exc() + "\\n")
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- Project Sub-Resources (Teams, Tasks) ---
@@ -169,15 +196,27 @@ def delete_task(task_id: UUID, user = Depends(get_current_user)):
 def get_project_team(project_id: UUID, user = Depends(get_current_user)):
     """List agents assigned to a project."""
     try:
+        with open("project_debug.log", "a") as f:
+            f.write(f"DEBUG: get_project_team hit. ProjectID: {project_id}\\n")
+
         # Verify access
         p_response = supabase.table("projects").select("id").eq("id", str(project_id)).eq("owner_id", user.id).execute()
         if not p_response.data:
              raise HTTPException(status_code=404, detail="Project not found")
              
         response = supabase.table("agents").select("*").eq("project_id", str(project_id)).execute()
+        
+        # Debug Data
+        with open("project_debug.log", "a") as f:
+            f.write(f"DEBUG: Team Data Count: {len(response.data)}\\n")
+            
         return response.data
     except Exception as e:
-         raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        with open("project_debug.log", "a") as f:
+            f.write(f"ERROR in get_project_team: {str(e)}\\n")
+            f.write(traceback.format_exc() + "\\n")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{project_id}/agents", response_model=AgentResponse)
 def create_project_agent(project_id: UUID, agent: AgentCreate, user = Depends(get_current_user)):

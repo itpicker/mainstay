@@ -46,9 +46,16 @@ def get_model_config(model_id: str):
         print(f"Error fetching model config: {e}")
         return None
 
-def stream_llm(provider: str, model_id: str, messages: List[Dict[str, str]], api_key: Optional[str], base_url: Optional[str]) -> Generator[str, None, None]:
-    """Generates SSE chunks from LLM."""
-    
+from backend.embeddings import get_embedding
+
+# ... existing imports ...
+
+def stream_llm(provider: str, model_id: str, messages: List[Dict[str, str]], api_key: Optional[str], base_url: Optional[str], agent_id: str) -> Generator[str, None, None]:
+    """
+    Generates SSE chunks from LLM and saves the full response to DB.
+    """
+    full_response_content = ""
+
     # 1. Ollama
     if provider.upper() == "OLLAMA":
         url = base_url or "http://localhost:11434"
@@ -58,7 +65,7 @@ def stream_llm(provider: str, model_id: str, messages: List[Dict[str, str]], api
         payload = {
             "model": model_id,
             "messages": messages,
-            "stream": True, # Enable streaming
+            "stream": True, 
             "options": {
                 "num_ctx": 4096
             }
@@ -71,10 +78,10 @@ def stream_llm(provider: str, model_id: str, messages: List[Dict[str, str]], api
                 for line in res.iter_lines():
                     if line:
                         try:
-                            # Ollama returns JSON object per line
                             data = json.loads(line)
                             content = data.get("message", {}).get("content", "")
                             if content:
+                                full_response_content += content
                                 yield f"data: {json.dumps({'content': content})}\n\n"
                             if data.get("done"):
                                 break
@@ -83,16 +90,33 @@ def stream_llm(provider: str, model_id: str, messages: List[Dict[str, str]], api
         except Exception as e:
              yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
-    # 2. OpenAI (Example stub)
+    # 2. OpenAI (Stub)
     elif provider.upper() in ["OPENAI", "ANTHROPIC"]:
          yield f"data: {json.dumps({'content': 'Streaming not yet supported for OpenAI/Anthropic in this demo.'})}\n\n"
     
+    # --- PERSISTENCE: Save Agent Response ---
+    if full_response_content:
+        try:
+            logging.info("Saving Agent response to DB...")
+            embedding = get_embedding(full_response_content)
+            
+            completion_data = {
+                "agent_id": agent_id,
+                "role": "assistant",
+                "content": full_response_content,
+                "embedding": embedding,
+                "metadata": {"model": model_id}
+            }
+            supabase.table("chat_messages").insert(completion_data).execute()
+        except Exception as e:
+             logging.error(f"Failed to save agent message: {e}")
+
     yield "event: done\ndata: [DONE]\n\n"
 
 @router.post("/stream")
 def chat_stream(request: ChatRequest, user = Depends(get_current_user)):
     """
-    Stream a message response from an agent.
+    Stream a message response from an agent with RAG support.
     """
     # 1. Fetch Agent
     try:
@@ -115,12 +139,56 @@ def chat_stream(request: ChatRequest, user = Depends(get_current_user)):
         provider = model_config.get("provider", "OPENAI")
         api_key = model_config.get("api_key")
         base_url = model_config.get("base_url")
+
+    # --- RAG: Retrieve Context ---
+    # Generate embedding for the new user message
+    user_embedding = get_embedding(request.message)
+    
+    relevant_context = ""
+    if user_embedding:
+        try:
+            # Call RPC function to find similar messages
+            rpc_params = {
+                "query_embedding": user_embedding,
+                "match_threshold": 0.5, # Adjust threshold
+                "match_count": 5,        # Retrieve top 5
+                "filter_agent_id": request.agent_id
+            }
+            # Note: We filter by current agent to keep context relevant to this "persona", 
+            # but you might want to search across all agents in the project eventually.
+            
+            matches = supabase.rpc("match_chat_messages", rpc_params).execute()
+            
+            if matches.data:
+                context_texts = [f"- {m['content']}" for m in matches.data]
+                relevant_context = "\\n".join(context_texts)
+                logging.info(f"RAG: Found {len(matches.data)} relevant messages.")
+        except Exception as e:
+            logging.error(f"RAG Retrieval failed: {e}")
+    
+    # --- PERSISTENCE: Save User Message ---
+    try:
+        msg_data = {
+            "agent_id": request.agent_id,
+            "role": "user",
+            "content": request.message,
+            "embedding": user_embedding,
+            "metadata": {}
+        }
+        supabase.table("chat_messages").insert(msg_data).execute()
+    except Exception as e:
+        logging.error(f"Failed to save user message: {e}")
+
     
     # 3. Construct Context
     system_prompt = f"You are {agent.get('name')}, a {agent.get('role')} in a software project."
     if agent.get("goal"):
-        system_prompt += f"\nYour goal: {agent.get('goal')}"
+        system_prompt += f"\\nYour goal: {agent.get('goal')}"
     
+    # Inject RAG Context into System Prompt
+    if relevant_context:
+        system_prompt += f"\\n\\n[Relevant Context from Previous Conversations]:\\n{relevant_context}\\n[End Context]"
+
     # Merge history
     llm_messages = [{"role": "system", "content": system_prompt}]
     for msg in request.history:
@@ -137,7 +205,7 @@ def chat_stream(request: ChatRequest, user = Depends(get_current_user)):
 
     # 4. Return Streaming Response
     return StreamingResponse(
-        stream_llm(provider, model_id, llm_messages, api_key, base_url),
+        stream_llm(provider, model_id, llm_messages, api_key, base_url, request.agent_id),
         media_type="text/event-stream"
     )
 
