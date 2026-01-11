@@ -8,6 +8,16 @@ import os
 from backend.db import supabase
 from backend.dependencies import get_current_user
 
+import logging
+
+# Configure logging to file
+logging.basicConfig(
+    filename='chat_debug.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    force=True
+)
+
 router = APIRouter(
     prefix="/chat",
     tags=["chat"],
@@ -118,11 +128,12 @@ def chat_stream(request: ChatRequest, user = Depends(get_current_user)):
         llm_messages.append({"role": role, "content": msg.content})
     llm_messages.append({"role": "user", "content": request.message})
 
-    # DEBUG: Print constructed messages to console
-    print("\n--- LLM Context Debug ---")
+    # DEBUG: Log to file
+    logging.info(f"--- LLM Context Debug [Agent: {request.agent_id}] ---")
     for m in llm_messages:
-        print(f"[{m['role']}]: {m['content'][:50]}..." if len(m['content']) > 50 else f"[{m['role']}]: {m['content']}")
-    print("-------------------------\n")
+        content_preview = m['content'][:100] + "..." if len(m['content']) > 100 else m['content']
+        logging.info(f"[{m['role']}]: {content_preview}")
+    logging.info("-------------------------")
 
     # 4. Return Streaming Response
     return StreamingResponse(
