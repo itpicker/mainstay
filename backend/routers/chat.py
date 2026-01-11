@@ -48,7 +48,10 @@ def stream_llm(provider: str, model_id: str, messages: List[Dict[str, str]], api
         payload = {
             "model": model_id,
             "messages": messages,
-            "stream": True # Enable streaming
+            "stream": True, # Enable streaming
+            "options": {
+                "num_ctx": 4096
+            }
         }
         
         try:
@@ -114,6 +117,12 @@ def chat_stream(request: ChatRequest, user = Depends(get_current_user)):
         role = "assistant" if msg.role == "agent" else msg.role
         llm_messages.append({"role": role, "content": msg.content})
     llm_messages.append({"role": "user", "content": request.message})
+
+    # DEBUG: Print constructed messages to console
+    print("\n--- LLM Context Debug ---")
+    for m in llm_messages:
+        print(f"[{m['role']}]: {m['content'][:50]}..." if len(m['content']) > 50 else f"[{m['role']}]: {m['content']}")
+    print("-------------------------\n")
 
     # 4. Return Streaming Response
     return StreamingResponse(

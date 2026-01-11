@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Projects', href: '/projects', icon: FolderKanban },
-    { name: 'Agents', href: '/agents', icon: Users },
+    // { name: 'Agents', href: '/agents', icon: Users }, // Disabled as agents are project-specific
     { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

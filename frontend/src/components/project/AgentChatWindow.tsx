@@ -37,6 +37,20 @@ export function AgentChatWindow({ agent, onClose }: AgentChatWindowProps) {
     };
 
     useEffect(() => {
+        // Reset or Initialize messages when agent changes
+        setMessages([
+            {
+                id: '1',
+                role: 'agent',
+                content: `Hello! I am ${agent.name}. How can I assist you with the project today?`,
+                timestamp: Date.now()
+            }
+        ]);
+        setInputValue('');
+        setIsTyping(false);
+    }, [agent.id, agent.name]);
+
+    useEffect(() => {
         if (!isMinimized) {
             scrollToBottom();
         }

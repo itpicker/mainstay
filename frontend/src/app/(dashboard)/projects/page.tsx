@@ -11,20 +11,14 @@ export default function ProjectsPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [debug, setDebug] = useState("Init"); // Debug state
 
     useEffect(() => {
         const fetchProjects = async () => {
-            setDebug("Starting fetchProjects...");
             setError(null);
             try {
-                setDebug("Calling API (ProjectService.getAllProjects)...");
                 const data = await ProjectService.getAllProjects();
 
-                setDebug(`API Responded. Items: ${Array.isArray(data) ? data.length : 'Not Array'}`);
-
                 // Map API response
-                setDebug("Mapping data...");
                 const mappedProjects = data.map((p: any) => ({
                     ...p,
                     name: p.title,
@@ -39,13 +33,10 @@ export default function ProjectsPage() {
                     completedTaskCount: 0
                 }));
                 setProjects(mappedProjects);
-                setDebug("State updated.");
             } catch (err: any) {
                 console.error("Failed to fetch projects:", err);
-                setDebug(`Error caught: ${err.message}`);
                 setError("Failed to load projects. Please check your connection.");
             } finally {
-                setDebug("Finally block reached.");
                 setIsLoading(false);
             }
         };
@@ -57,7 +48,6 @@ export default function ProjectsPage() {
         return (
             <div className="flex flex-col h-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-                <p className="text-sm font-mono text-muted-foreground">Debug: {debug}</p>
             </div>
         );
     }
