@@ -1,11 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, Save, Plus, X } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ProjectService } from '@/lib/api/projects';
 
 export default function NewProjectPage() {
+    const router = useRouter();
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
     const [tasks, setTasks] = useState<{ title: string; description: string }[]>([{ title: '', description: '' }]);
+    const [isLoading, setIsLoading] = useState(false);
 
     const addTask = () => {
         setTasks([...tasks, { title: '', description: '' }]);
@@ -19,6 +25,44 @@ export default function NewProjectPage() {
         const newTasks = [...tasks];
         newTasks[index][field] = value;
         setTasks(newTasks);
+    };
+
+    const handleCreate = async () => {
+        if (!title.trim()) {
+            alert('Please enter a project title');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            // 1. Create Project
+            const project = await ProjectService.createProject({
+                title,
+                description
+            });
+
+            // 2. Create Initial Tasks
+            // Run sequentially to ensure order or handle errors individually if needed?
+            // Parallel is fine for speed.
+            const validTasks = tasks.filter(t => t.title.trim() !== '');
+            if (validTasks.length > 0) {
+                await Promise.all(validTasks.map(task =>
+                    ProjectService.createTask(project.id, {
+                        title: task.title,
+                        description: task.description,
+                        status: 'TODO',
+                        priority: 'MEDIUM'
+                    })
+                ));
+            }
+
+            router.push('/projects');
+        } catch (error) {
+            console.error("Failed to create project:", error);
+            alert("Failed to create project. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -42,6 +86,8 @@ export default function NewProjectPage() {
                             <label className="text-sm font-medium text-muted-foreground">Project Name</label>
                             <input
                                 type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
                                 placeholder="e.g. Q1 Marketing Campaign"
                                 className="w-full bg-secondary/30 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all"
                             />
@@ -49,6 +95,8 @@ export default function NewProjectPage() {
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">Description</label>
                             <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
                                 rows={3}
                                 placeholder="Describe the main objective..."
                                 className="w-full bg-secondary/30 border border-white/10 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all resize-none"
@@ -116,9 +164,13 @@ export default function NewProjectPage() {
                     <Link href="/projects" className="px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-white/5 transition-colors">
                         Cancel
                     </Link>
-                    <button className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
-                        <Save className="h-4 w-4" />
-                        Create Project
+                    <button
+                        onClick={handleCreate}
+                        disabled={isLoading}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        {isLoading ? 'Creating...' : 'Create Project'}
                     </button>
                 </div>
             </div>

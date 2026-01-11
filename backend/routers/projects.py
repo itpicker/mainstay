@@ -90,6 +90,32 @@ def create_project_task(project_id: UUID, task: TaskCreate, user = Depends(get_c
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.patch("/tasks/{task_id}", response_model=TaskResponse)
+def update_task(task_id: UUID, task_update: dict, user = Depends(get_current_user)):
+    """Update a task's status, priority, or details."""
+    try:
+        # In a real app, we should check if user has access to the project this task belongs to.
+        # For MVP/PoC, we assume if valid user, let them update (RLS handles security).
+        response = supabase.table("tasks").update(task_update).eq("id", str(task_id)).execute()
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Task not found or update failed")
+        return response.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_task(task_id: UUID, user = Depends(get_current_user)):
+    """Delete a task."""
+    try:
+        response = supabase.table("tasks").delete().eq("id", str(task_id)).execute()
+        # Supabase delete response data contains the deleted rows. If empty, maybe not found or RLS blocked.
+        if not response.data:
+             # It might be 404 or just already gone. 204 is safe.
+             pass
+        return None
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/{project_id}/team", response_model=List[AgentResponse])
 def get_project_team(project_id: UUID, user = Depends(get_current_user)):
     """List agents assigned to a project."""
