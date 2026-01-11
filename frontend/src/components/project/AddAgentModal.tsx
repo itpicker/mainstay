@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { Agent } from '@/lib/types';
+import { AdminService, AIModel } from '@/lib/api/admin';
 
 // Basic Role-based Goals (User Layer)
 const ROLE_TEMPLATES: Record<string, string> = {
@@ -28,6 +29,32 @@ export function AddAgentModal({ isOpen, onClose, onSave }: AddAgentModalProps) {
     const [goal, setGoal] = useState(ROLE_TEMPLATES['DEVELOPER']); // Default
     const [capabilitiesInput, setCapabilitiesInput] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Model Options State
+    const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
+    const [isLoadingModels, setIsLoadingModels] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            loadModels();
+        }
+    }, [isOpen]);
+
+    const loadModels = async () => {
+        setIsLoadingModels(true);
+        try {
+            const data = await AdminService.getAllModels();
+            setAvailableModels(data);
+            if (data.length > 0) {
+                // Determine a smart default? Or leave empty for system default.
+                // setModel(data[0].model_id);
+            }
+        } catch (error) {
+            console.error("Failed to load models:", error);
+        } finally {
+            setIsLoadingModels(false);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -158,15 +185,25 @@ export function AddAgentModal({ isOpen, onClose, onSave }: AddAgentModalProps) {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-muted-foreground">Model (Optional)</label>
-                        <input
-                            type="text"
-                            value={model}
-                            onChange={(e) => setModel(e.target.value)}
-                            placeholder="e.g. gpt-4-turbo, claude-3-opus"
-                            className="w-full px-3 py-2 bg-secondary/50 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-                        />
-                        <p className="text-xs text-muted-foreground">Leave empty to use system default.</p>
+                        <label className="text-sm font-medium text-muted-foreground">Model</label>
+                        {isLoadingModels ? (
+                            <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Loader2 className="h-3 w-3 animate-spin" /> Loading models...
+                            </div>
+                        ) : (
+                            <select
+                                value={model}
+                                onChange={(e) => setModel(e.target.value)}
+                                className="w-full px-3 py-2 bg-secondary/50 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            >
+                                <option value="">System Default</option>
+                                {availableModels.map((m) => (
+                                    <option key={m.id} value={m.model_id}>
+                                        {m.name} ({m.provider})
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                     </div>
 
                     <div className="space-y-2">
