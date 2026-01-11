@@ -10,9 +10,10 @@ interface ProjectTeamProps {
     onUpdateAgent: (agent: Agent) => void;
     onRemoveAgent?: (agentId: string) => void;
     onMessage?: (agent: Agent) => void;
+    onAddAgent?: () => void;
 }
 
-export function ProjectTeam({ agents, onUpdateAgent, onRemoveAgent, onMessage }: ProjectTeamProps) {
+export function ProjectTeam({ agents, onUpdateAgent, onRemoveAgent, onMessage, onAddAgent }: ProjectTeamProps) {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
@@ -21,9 +22,14 @@ export function ProjectTeam({ agents, onUpdateAgent, onRemoveAgent, onMessage }:
                     <h2 className="text-lg font-semibold">Project Team</h2>
                     <p className="text-sm text-muted-foreground">Manage agents assigned to this project and their autonomy levels.</p>
                 </div>
-                <button className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
-                    <Plus className="h-4 w-4" /> Add Agent
-                </button>
+                {onAddAgent && (
+                    <button
+                        onClick={onAddAgent}
+                        className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+                    >
+                        <Plus className="h-4 w-4" /> Add Agent
+                    </button>
+                )}
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

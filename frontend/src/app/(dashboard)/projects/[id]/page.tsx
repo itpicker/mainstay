@@ -20,6 +20,7 @@ import { PlanningChat } from '@/components/project/PlanningChat';
 import { cn } from '@/lib/utils';
 import { AgentChatWindow } from '@/components/project/AgentChatWindow';
 import { ProjectService } from '@/lib/api/projects';
+import { AddAgentModal } from '@/components/project/AddAgentModal';
 
 const initialStages: ProjectStage[] = [
     { id: 'todo', name: 'To Do', color: 'bg-slate-500' },
@@ -48,6 +49,7 @@ export default function ProjectDetailsPage() {
     const [ghostTasks, setGhostTasks] = useState<Task[]>([]);
     const [activeChatAgentId, setActiveChatAgentId] = useState<string | null>(null);
     const [isChangeRequestOpen, setIsChangeRequestOpen] = useState(false);
+    const [isAddAgentModalOpen, setIsAddAgentModalOpen] = useState(false);
 
     // Review State (Mock for now until API implemented)
     const [pendingRequests, setPendingRequests] = useState<ReviewRequest[]>(mockPending);
@@ -139,6 +141,16 @@ export default function ProjectDetailsPage() {
             isAgentsActive: !prev.isAgentsActive
         }) : null);
         // Ideally save this state to backend via updateProject
+    };
+
+    const handleAddAgent = async (agentData: { name: string; role: string; capabilities: string[] }) => {
+        try {
+            const newAgent = await ProjectService.createAgent(projectId, agentData);
+            setProjectAgents([...projectAgents, newAgent]);
+        } catch (error) {
+            console.error("Failed to create agent:", error);
+            alert("Failed to create agent");
+        }
     };
 
     const openCreateTaskModal = (status: string = 'todo') => {
@@ -237,6 +249,12 @@ export default function ProjectDetailsPage() {
                 isOpen={isChangeRequestOpen}
                 onClose={() => setIsChangeRequestOpen(false)}
                 onSubmit={handleSubmitChangeRequest}
+            />
+
+            <AddAgentModal
+                isOpen={isAddAgentModalOpen}
+                onClose={() => setIsAddAgentModalOpen(false)}
+                onSave={handleAddAgent}
             />
 
             <div className="space-y-6 h-full flex flex-col p-6 pt-2">
@@ -390,6 +408,7 @@ export default function ProjectDetailsPage() {
                             agents={projectAgents}
                             onUpdateAgent={handleUpdateAgent}
                             onMessage={(agent) => setActiveChatAgentId(agent.id)}
+                            onAddAgent={() => setIsAddAgentModalOpen(true)}
                         />
                     )}
                     {view === 'GRAPH' && (

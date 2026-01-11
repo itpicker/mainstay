@@ -3,7 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 from backend.db import supabase
 from backend.dependencies import get_current_user
-from backend.schemas import ProjectCreate, ProjectResponse, ProjectUpdate, TaskCreate, TaskResponse, AgentResponse
+from backend.schemas import ProjectCreate, ProjectResponse, ProjectUpdate, TaskCreate, TaskResponse, AgentResponse, AgentCreate
 import uuid
 
 router = APIRouter(
@@ -174,3 +174,26 @@ def get_project_team(project_id: UUID, user = Depends(get_current_user)):
         return response.data
     except Exception as e:
          raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{project_id}/agents", response_model=AgentResponse)
+def create_project_agent(project_id: UUID, agent: AgentCreate, user = Depends(get_current_user)):
+    """Add a new agent to the project team."""
+    try:
+        # Verify access
+        p_response = supabase.table("projects").select("id").eq("id", str(project_id)).eq("owner_id", user.id).execute()
+        if not p_response.data:
+             raise HTTPException(status_code=404, detail="Project not found")
+        
+        new_agent = {
+            "project_id": str(project_id),
+            "name": agent.name,
+            "role": agent.role,
+            "capabilities": agent.capabilities,
+            "status": "IDLE",
+            "autonomy_level": 3 # Default to Senior Collaborator
+        }
+        
+        response = supabase.table("agents").insert(new_agent).execute()
+        return response.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

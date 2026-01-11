@@ -42,5 +42,10 @@ export const ProjectService = {
     getTeam: async (projectId: string): Promise<Agent[]> => {
         const response = await api.get<Agent[]>(`/projects/${projectId}/team`);
         return response.data;
+    },
+
+    createAgent: async (projectId: string, data: { name: string; role: string; capabilities: string[] }): Promise<Agent> => {
+        const response = await api.post<Agent>(`/projects/${projectId}/agents`, data);
+        return response.data;
     }
 };
