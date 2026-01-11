@@ -73,10 +73,7 @@ def create_project(project: ProjectCreate, user = Depends(get_current_user)):
     # Seed default agents
     project_id = created_project['id']
     default_agents = [
-        {"project_id": project_id, "name": "Alpha-PM", "role": "MANAGER", "status": "IDLE", "capabilities": ["planning", "management"]},
-        {"project_id": project_id, "name": "Beta-Dev", "role": "DEVELOPER", "status": "IDLE", "capabilities": ["coding", "debugging"]},
-        {"project_id": project_id, "name": "Gamma-Res", "role": "RESEARCHER", "status": "IDLE", "capabilities": ["search", "analysis"]},
-        {"project_id": project_id, "name": "Delta-Des", "role": "DESIGNER", "status": "IDLE", "capabilities": ["ui/ux", "visuals"]}
+        {"project_id": project_id, "name": "Alpha-PM", "role": "MANAGER", "status": "IDLE", "capabilities": ["planning", "management"], "model": "gpt-4-turbo"}
     ]
     try:
         supabase.table("agents").insert(default_agents).execute()
@@ -84,7 +81,7 @@ def create_project(project: ProjectCreate, user = Depends(get_current_user)):
         print(f"Warning: Failed to seed agents: {agent_e}")
         # Non-blocking, return project anyway
 
-        return created_project
+    return created_project
 
 @router.get("/{project_id}", response_model=ProjectResponse)
 def get_project(project_id: UUID, user = Depends(get_current_user)):
@@ -135,7 +132,14 @@ def create_project_task(project_id: UUID, task: TaskCreate, user = Depends(get_c
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.patch("/tasks/{task_id}", response_model=TaskResponse)
+# Additional router for top-level /tasks endpoints
+tasks_router = APIRouter(
+    prefix="/tasks",
+    tags=["tasks"],
+    dependencies=[Depends(get_current_user)]
+)
+
+@tasks_router.patch("/{task_id}", response_model=TaskResponse)
 def update_task(task_id: UUID, task_update: dict, user = Depends(get_current_user)):
     """Update a task's status, priority, or details."""
     try:
@@ -148,7 +152,7 @@ def update_task(task_id: UUID, task_update: dict, user = Depends(get_current_use
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+@tasks_router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_task(task_id: UUID, user = Depends(get_current_user)):
     """Delete a task."""
     try:
@@ -189,6 +193,8 @@ def create_project_agent(project_id: UUID, agent: AgentCreate, user = Depends(ge
             "name": agent.name,
             "role": agent.role,
             "capabilities": agent.capabilities,
+            "model": agent.model,
+            "goal": agent.goal,
             "status": "IDLE",
             "autonomy_level": 3 # Default to Senior Collaborator
         }

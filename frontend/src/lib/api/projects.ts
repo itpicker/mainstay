@@ -44,7 +44,7 @@ export const ProjectService = {
         return response.data;
     },
 
-    createAgent: async (projectId: string, data: { name: string; role: string; capabilities: string[] }): Promise<Agent> => {
+    createAgent: async (projectId: string, data: { name: string; role: string; capabilities: string[]; model?: string; goal?: string }): Promise<Agent> => {
         const response = await api.post<Agent>(`/projects/${projectId}/agents`, data);
         return response.data;
     }

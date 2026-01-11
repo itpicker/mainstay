@@ -48,6 +48,8 @@ class TaskResponse(TaskBase):
 class AgentBase(BaseModel):
     name: str
     role: str
+    model: Optional[str] = None
+    goal: Optional[str] = None # User Instruction / Persona
     capabilities: List[str] = []
 
 class AgentCreate(AgentBase):

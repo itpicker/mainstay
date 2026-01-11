@@ -135,7 +135,9 @@ export interface AgentMessage {
 export interface Agent {
     id: string;
     name: string;
-    role: AgentRole;
+    role: string; // Relaxed from AgentRole to string for custom roles
+    model?: string; // New field
+    goal?: string; // New field: Instructions/Persona
     status: AgentStatus;
     capabilities: string[];
     autonomyLevel?: number; // 1-5

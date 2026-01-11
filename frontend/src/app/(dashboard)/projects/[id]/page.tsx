@@ -143,7 +143,7 @@ export default function ProjectDetailsPage() {
         // Ideally save this state to backend via updateProject
     };
 
-    const handleAddAgent = async (agentData: { name: string; role: string; capabilities: string[] }) => {
+    const handleAddAgent = async (agentData: { name: string; role: string; capabilities: string[]; model?: string; goal?: string }) => {
         try {
             const newAgent = await ProjectService.createAgent(projectId, agentData);
             setProjectAgents([...projectAgents, newAgent]);
