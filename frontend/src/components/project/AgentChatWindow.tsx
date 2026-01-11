@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Minimize2, Send, Bot, User, Maximize2 } from 'lucide-react';
 import { Agent } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { ChatService } from '@/lib/api/chat';
 
 interface AgentChatWindowProps {
     agent: Agent;
@@ -41,7 +42,7 @@ export function AgentChatWindow({ agent, onClose }: AgentChatWindowProps) {
         }
     }, [messages, isMinimized]);
 
-    const handleSendMessage = () => {
+    const handleSendMessage = async () => {
         if (!inputValue.trim()) return;
 
         const userMsg: Message = {
@@ -51,21 +52,37 @@ export function AgentChatWindow({ agent, onClose }: AgentChatWindowProps) {
             timestamp: Date.now()
         };
 
+        const currentHistory = messages.map(m => ({
+            role: m.role,
+            content: m.content
+        }));
+
         setMessages(prev => [...prev, userMsg]);
         setInputValue('');
         setIsTyping(true);
 
-        // Simulate Agent Response
-        setTimeout(() => {
+        try {
+            const responseText = await ChatService.sendMessage(agent.id, userMsg.content, currentHistory);
+
             const agentMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'agent',
-                content: `I've received your message: "${userMsg.content}". I'll get back to you shortly.`,
+                content: responseText,
                 timestamp: Date.now()
             };
             setMessages(prev => [...prev, agentMsg]);
+        } catch (error) {
+            console.error("Chat Error:", error);
+            const errorMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'agent',
+                content: "I'm having trouble connecting to my brain right now. Please try again later.",
+                timestamp: Date.now()
+            };
+            setMessages(prev => [...prev, errorMsg]);
+        } finally {
             setIsTyping(false);
-        }, 1000);
+        }
     };
 
     if (isMinimized) {

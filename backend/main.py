@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from backend.dependencies import get_current_user
 from backend.db import supabase
-from backend.routers import projects, admin
+from backend.routers import projects, admin, chat
 
 load_dotenv(dotenv_path="backend/.env")
 
@@ -20,6 +20,7 @@ app.add_middleware(
 app.include_router(projects.router)
 app.include_router(projects.tasks_router)
 app.include_router(admin.router)
+app.include_router(chat.router)
 
 @app.get("/")
 def read_root():
