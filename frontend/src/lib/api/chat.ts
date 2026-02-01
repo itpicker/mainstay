@@ -1,83 +1,73 @@
-import { api } from './client';
-
 export interface ChatMessage {
-    role: 'user' | 'agent';
+    role: 'user' | 'assistant' | 'agent';
     content: string;
 }
 
-export const ChatService = {
-    sendMessage: async (agentId: string, message: string, history: ChatMessage[]): Promise<string> => {
-        const response = await api.post<{ response: string }>('/chat/message', {
-            agent_id: agentId,
-            message,
-            history
-        });
-        return response.data.response;
-    },
-
-    streamMessage: async (agentId: string, message: string, history: ChatMessage[], onChunk: (chunk: string) => void): Promise<void> => {
-        // Use native fetch for streaming
-        const token = (await import('@/lib/supabase')).supabase.auth.getSession().then(({ data }) => data.session?.access_token);
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/chat/stream`, {
+export const streamChat = async (
+    message: string,
+    agentId: string,
+    history: ChatMessage[],
+    threadId?: string | null,
+    onChunk?: (chunk: string) => void,
+    onDone?: () => void,
+    onError?: (error: any) => void
+) => {
+    try {
+        const response = await fetch('http://127.0.0.1:8000/chat/stream', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${await token}`
+                // 'Authorization': `Bearer ...` // TODO: Add auth token if needed
             },
             body: JSON.stringify({
                 agent_id: agentId,
                 message,
-                history
-            })
+                history,
+                thread_id: threadId
+            }),
         });
 
         if (!response.ok) {
-            throw new Error(`Stream failed: ${response.statusText}`);
+            throw new Error(`Error: ${response.statusText}`);
         }
 
         const reader = response.body?.getReader();
-        if (!reader) throw new Error("No reader available");
-
         const decoder = new TextDecoder();
 
-        let buffer = '';
+        if (!reader) throw new Error('No reader available');
 
         while (true) {
             const { done, value } = await reader.read();
-
-            if (value) {
-                buffer += decoder.decode(value, { stream: !done });
+            if (done) {
+                if (onDone) onDone();
+                break;
             }
 
-            let lines = buffer.split('\n');
-
-            // Should we hold the last line? Only if not done.
-            if (!done) {
-                buffer = lines.pop() || '';
-            } else {
-                buffer = ''; // We are done, process everything
-            }
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n\n');
 
             for (const line of lines) {
-                if (line.trim() === '') continue;
-
                 if (line.startsWith('data: ')) {
-                    const dataStr = line.slice(6);
-                    if (dataStr === '[DONE]') return;
-                    try {
-                        console.log("Processing chunk:", dataStr); // DEBUG
-                        const data = JSON.parse(dataStr);
-                        if (data.content) {
-                            onChunk(data.content);
+                    const dataStr = line.replace('data: ', '');
+                    if (dataStr === '[DONE]') {
+                        // Handle done logic if distinct from stream end
+                    } else {
+                        try {
+                            const data = JSON.parse(dataStr);
+                            if (data.content && onChunk) {
+                                onChunk(data.content);
+                            }
+                            if (data.error && onError) {
+                                onError(data.error);
+                            }
+                        } catch (e) {
+                            console.error("Error parsing chunk", e);
                         }
-                    } catch (e) {
-                        console.error("Error parsing chunk:", dataStr, e);
                     }
                 }
             }
-
-            if (done) break;
         }
+    } catch (error) {
+        if (onError) onError(error);
     }
 };

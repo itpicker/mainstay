@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import ChatWindow from "@/components/chat/ChatWindow";
 
 export default function DashboardLayout({
     children,
@@ -40,6 +41,7 @@ export default function DashboardLayout({
                     <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" />
                     {children}
                 </main>
+                <ChatWindow />
             </div>
         </div>
     );

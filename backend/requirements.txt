@@ -6,6 +6,11 @@ pydantic
 python-dotenv
 langchain-openai
 langchain-ollama
+langchain_community
 supabase
 
 
+gotrue
+langgraph-checkpoint-postgres
+psycopg-binary
+psycopg-pool

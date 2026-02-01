@@ -31,6 +31,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     agent_id: str
     message: str
+    thread_id: Optional[str] = None
     history: List[ChatMessage] = []
 
 class ChatResponse(BaseModel):
@@ -116,9 +117,9 @@ def stream_llm(provider: str, model_id: str, messages: List[Dict[str, str]], api
 @router.post("/stream")
 def chat_stream(request: ChatRequest, user = Depends(get_current_user)):
     """
-    Stream a message response from an agent with RAG support.
+    Stream a conversation using the Multi-Agent LangGraph.
     """
-    # 1. Fetch Agent
+    # 1. Fetch Agent (Optional verification)
     try:
         agent_res = supabase.table("agents").select("*").eq("id", request.agent_id).execute()
         if not agent_res.data:
@@ -127,87 +128,106 @@ def chat_stream(request: ChatRequest, user = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DB Error: {str(e)}")
 
-    # 2. Determine Model
-    model_id = agent.get("model") or "gpt-4-turbo"
-    model_config = get_model_config(model_id)
+    # 2. Prepare Inputs & Persistence
+    from backend.agents.graph import get_graph
+    from langchain_core.messages import HumanMessage, SystemMessage
+    from langgraph.checkpoint.postgres import PostgresSaver
+    from psycopg_pool import ConnectionPool
     
-    provider = "OPENAI"
-    api_key = None
-    base_url = None
+    # DB Connection String (Assume standard Supabase format)
+    # Ideally use a global pool, but for now we create one per request or use a context manager if efficient
+    # Supabase connection string usually in DATABASE_URL
+    import os
+    db_uri = os.getenv("DATABASE_URL")
+    
+    # If no DB URL, warn and fall back to stateless
+    if not db_uri:
+        logging.warning("DATABASE_URL not set. Running stateless.")
+        checkpointer = None
+        graph = get_graph()
+    else:
+        # Note: PostgresSaver needs a connection info
+        # We use a context manager for the connection
+        # But `graph.stream` is an iterator. We need the connection to stay open.
+        pass # Handle inside event_stream
 
-    if model_config:
-        provider = model_config.get("provider", "OPENAI")
-        api_key = model_config.get("api_key")
-        base_url = model_config.get("base_url")
-
-    # --- RAG: Retrieve Context ---
-    # Generate embedding for the new user message
+    # ... RAG Logic (Simplified) ...
     user_embedding = get_embedding(request.message)
-    
     relevant_context = ""
-    if user_embedding:
-        try:
-            # Call RPC function to find similar messages
-            rpc_params = {
-                "query_embedding": user_embedding,
-                "match_threshold": 0.5, # Adjust threshold
-                "match_count": 5,        # Retrieve top 5
-                "filter_agent_id": request.agent_id
-            }
-            # Note: We filter by current agent to keep context relevant to this "persona", 
-            # but you might want to search across all agents in the project eventually.
-            
-            matches = supabase.rpc("match_chat_messages", rpc_params).execute()
-            
-            if matches.data:
-                context_texts = [f"- {m['content']}" for m in matches.data]
-                relevant_context = "\\n".join(context_texts)
-                logging.info(f"RAG: Found {len(matches.data)} relevant messages.")
-        except Exception as e:
-            logging.error(f"RAG Retrieval failed: {e}")
     
-    # --- PERSISTENCE: Save User Message ---
-    try:
-        msg_data = {
-            "agent_id": request.agent_id,
-            "role": "user",
-            "content": request.message,
-            "embedding": user_embedding,
-            "metadata": {}
-        }
-        supabase.table("chat_messages").insert(msg_data).execute()
-    except Exception as e:
-        logging.error(f"Failed to save user message: {e}")
-
+    # Build initial messages (History + Current)
+    initial_messages = []
     
-    # 3. Construct Context
-    system_prompt = f"You are {agent.get('name')}, a {agent.get('role')} in a software project."
-    if agent.get("goal"):
-        system_prompt += f"\\nYour goal: {agent.get('goal')}"
+    # If we have a thread_id, we might rely on the checkpointer's memory 
+    # and NOT re-inject history if it's already there. 
+    # But for robustness, if history is passed, we can append it.
     
-    # Inject RAG Context into System Prompt
-    if relevant_context:
-        system_prompt += f"\\n\\n[Relevant Context from Previous Conversations]:\\n{relevant_context}\\n[End Context]"
-
-    # Merge history
-    llm_messages = [{"role": "system", "content": system_prompt}]
+    # Add System Prompt with Agent Persona
+    system_content = f"You are {agent.get('name')}. {agent.get('role')}."
+    initial_messages.append(SystemMessage(content=system_content))
+    
+    # Add History provided by client (if any)
     for msg in request.history:
-        role = "assistant" if msg.role == "agent" else msg.role
-        llm_messages.append({"role": role, "content": msg.content})
-    llm_messages.append({"role": "user", "content": request.message})
+        if msg.role == "user":
+            initial_messages.append(HumanMessage(content=msg.content))
+        else:
+            initial_messages.append(AIMessage(content=msg.content))
+            
+    # Add Current User Message
+    initial_messages.append(HumanMessage(content=request.message))
+    
+    inputs = {"messages": initial_messages}
 
-    # DEBUG: Log to file
-    logging.info(f"--- LLM Context Debug [Agent: {request.agent_id}] ---")
-    for m in llm_messages:
-        content_preview = m['content'][:100] + "..." if len(m['content']) > 100 else m['content']
-        logging.info(f"[{m['role']}]: {content_preview}")
-    logging.info("-------------------------")
+    async def event_stream():
+        # Async generator to handle DB connection lifecycle
+        try:
+            if db_uri and request.thread_id:
+                # Use PostgresSaver
+                # We need to setup the checkpointer
+                # Use PostgresSaver with context manager to ensure cleanup
+                try:
+                    with ConnectionPool(conninfo=db_uri, max_size=20, kwargs={"autocommit": True}) as pool:
+                        checkpointer = PostgresSaver(pool)
+                        
+                        # Ensure tables exist (Run once typically, but safe here)
+                        checkpointer.setup() 
+                        
+                        # Compile graph with checkpointer
+                        graph_with_memory = get_graph(checkpointer=checkpointer)
+                        
+                        config = {"configurable": {"thread_id": request.thread_id}}
+                        
+                        # Run with config
+                        for event in graph_with_memory.stream(inputs, config=config):
+                            for node_name, values in event.items():
+                                 if "messages" in values:
+                                    last_msg = values["messages"][-1]
+                                    content = f"**{node_name}**: {last_msg.content}"
+                                    yield f"data: {json.dumps({'content': content + '\\n\\n'})}\\n\\n"
+                                    logging.info(f"Agent {node_name} response: {last_msg.content[:50]}...")
+                    
+                except Exception as e:
+                    logging.error(f"Persistence Error: {e}")
+                    # Try to yield error if stream is still open
+                    yield f"data: {json.dumps({'error': f'Persistence Error: {str(e)}'})}\\n\\n"
+                    
+            else:
+                # Stateless Fallback
+                graph = get_graph()
+                for event in graph.stream(inputs):
+                    for node_name, values in event.items():
+                        if "messages" in values:
+                             last_msg = values["messages"][-1]
+                             content = f"**{node_name}**: {last_msg.content}"
+                             yield f"data: {json.dumps({'content': content + '\\n\\n'})}\\n\\n"
 
-    # 4. Return Streaming Response
-    return StreamingResponse(
-        stream_llm(provider, model_id, llm_messages, api_key, base_url, request.agent_id),
-        media_type="text/event-stream"
-    )
+            yield "event: done\ndata: [DONE]\n\n"
+            
+        except Exception as e:
+            logging.error(f"Graph Error: {e}")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 # Keeping the blocking endpoint for backward compatibility if needed, or remove it.
 # Ideally we replace logic of previous endpoint or keep both.

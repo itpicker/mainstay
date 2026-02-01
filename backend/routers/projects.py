@@ -195,29 +195,49 @@ def delete_task(task_id: UUID, user = Depends(get_current_user)):
 @router.get("/{project_id}/team", response_model=List[AgentResponse])
 def get_project_team(project_id: UUID, user = Depends(get_current_user)):
     """List agents assigned to a project."""
-    try:
-        with open("project_debug.log", "a") as f:
-            f.write(f"DEBUG: get_project_team hit. ProjectID: {project_id}\\n")
+    retries = 3
+    import time
+    
+    last_error = None
+    for attempt in range(retries):
+        try:
+            with open("project_debug.log", "a") as f:
+                f.write(f"DEBUG: get_project_team hit (Attempt {attempt+1}). ProjectID: {project_id}\n")
 
-        # Verify access
-        p_response = supabase.table("projects").select("id").eq("id", str(project_id)).eq("owner_id", user.id).execute()
-        if not p_response.data:
-             raise HTTPException(status_code=404, detail="Project not found")
-             
-        response = supabase.table("agents").select("*").eq("project_id", str(project_id)).execute()
-        
-        # Debug Data
-        with open("project_debug.log", "a") as f:
-            f.write(f"DEBUG: Team Data Count: {len(response.data)}\\n")
+            # Verify access
+            p_response = supabase.table("projects").select("id").eq("id", str(project_id)).eq("owner_id", user.id).execute()
+            if not p_response.data:
+                 raise HTTPException(status_code=404, detail="Project not found")
+                 
+            response = supabase.table("agents").select("*").eq("project_id", str(project_id)).execute()
             
-        return response.data
-    except Exception as e:
-        import traceback
-        with open("project_debug.log", "a") as f:
-            f.write(f"ERROR in get_project_team: {str(e)}\\n")
-            f.write(traceback.format_exc() + "\\n")
-        raise HTTPException(status_code=500, detail=str(e))
-
+            # Debug Data
+            with open("project_debug.log", "a") as f:
+                f.write(f"DEBUG: Team Data Count: {len(response.data)}\n")
+                
+            return response.data
+            
+        except HTTPException:
+            raise # Don't retry 404s
+        except Exception as e:
+            last_error = e
+            # Check for connection errors
+            error_str = str(e)
+            if "disconnected" in error_str or "RemoteProtocolError" in error_str:
+                if attempt < retries - 1:
+                    time.sleep(0.5 * (attempt + 1))
+                    continue
+            
+            # If not retriable or out of retries, log and break
+            import traceback
+            with open("project_debug.log", "a") as f:
+                f.write(f"ERROR in get_project_team (Attempt {attempt+1}): {str(e)}\n")
+                f.write(traceback.format_exc() + "\n")
+            
+            # If it's the last attempt, raise
+            if attempt == retries - 1:
+                raise HTTPException(status_code=500, detail=f"Database Error after retries: {str(e)}")
+    
 @router.post("/{project_id}/agents", response_model=AgentResponse)
 def create_project_agent(project_id: UUID, agent: AgentCreate, user = Depends(get_current_user)):
     """Add a new agent to the project team."""

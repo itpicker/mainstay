@@ -75,41 +75,50 @@ export function AgentChatWindow({ agent, onClose }: AgentChatWindowProps) {
         setInputValue('');
         setIsTyping(true);
 
-        const agentMsgId = (Date.now() + 1).toString();
-        // Placeholder for Agent message
+        // We use a mutable flag to track if the agent message has been created yet.
+        // This avoids state race conditions and ensures we switch from "Typing" to "Message" exactly once.
+        let isFirstChunk = true;
+        const agentMsgId = Date.now().toString() + '-agent';
 
         try {
             await ChatService.streamMessage(agent.id, userMsg.content, currentHistory, (chunk) => {
-                setMessages(prev => {
-                    const exists = prev.find(msg => msg.id === agentMsgId);
-                    if (exists) {
+                if (isFirstChunk) {
+                    setIsTyping(false); // Hide typing indicator
+                    // Create the message with the first chunk
+                    setMessages(prev => [...prev, {
+                        id: agentMsgId,
+                        role: 'agent',
+                        content: chunk,
+                        timestamp: Date.now()
+                    }]);
+                    isFirstChunk = false;
+                } else {
+                    // Update existing message
+                    setMessages(prev => {
                         return prev.map(msg => {
                             if (msg.id === agentMsgId) {
                                 return { ...msg, content: msg.content + chunk };
                             }
                             return msg;
                         });
-                    } else {
-                        return [...prev, {
-                            id: agentMsgId,
-                            role: 'agent',
-                            content: chunk,
-                            timestamp: Date.now()
-                        }];
-                    }
-                });
-                // REMOVED: setIsTyping(false); in loop
+                    });
+                }
             });
         } catch (error) {
             console.error("Chat Error:", error);
-            // If failed empty, show error. If partially filled, maybe just stop? 
-            // Better to show error message separately if completely failed.
-            setMessages(prev => prev.map(msg => {
-                if (msg.id === agentMsgId && msg.content === '') {
-                    return { ...msg, content: "I'm having trouble thinking right now. Please try again." };
-                }
-                return msg;
-            }));
+            setIsTyping(false);
+            // If we never created a message (error before first chunk), show error bubble
+            if (isFirstChunk) {
+                setMessages(prev => [...prev, {
+                    id: agentMsgId,
+                    role: 'agent',
+                    content: "Sorry, I encountered an error. Please try again.",
+                    timestamp: Date.now()
+                }]);
+            } else {
+                // If we crash mid-stream, maybe append error text?
+                // For now, let's just leave what we have.
+            }
         } finally {
             setIsTyping(false);
         }
@@ -136,7 +145,7 @@ export function AgentChatWindow({ agent, onClose }: AgentChatWindowProps) {
     }
 
     return (
-        <div className="fixed bottom-4 right-4 z-50 w-80 h-96 bg-background border border-white/10 rounded-lg shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-200">
+        <div className="fixed bottom-4 right-4 z-50 w-[600px] h-[700px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] bg-background border border-white/10 rounded-lg shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-200">
             {/* Header */}
             <div className="flex items-center justify-between p-3 bg-secondary/50 border-b border-white/5">
                 <div className="flex items-center gap-2">
