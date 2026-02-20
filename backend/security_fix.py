@@ -99,6 +99,46 @@ def apply_security_fixes():
                 logger.info(f"Function sweep finished.")
                 logger.info("--- Function Sweep Complete ---")
 
+                # D. Restore Profiles RLS (Fix broken access)
+                logger.info("Restoring RLS policies on 'profiles'...")
+                # Allow users to view their own profile
+                try:
+                    cur.execute("""
+                        CREATE POLICY "Users can view own profile" ON profiles
+                        FOR SELECT USING (auth.uid() = id);
+                    """)
+                    logger.info("Created policy 'Users can view own profile'.")
+                except psycopg.errors.DuplicateObject:
+                    logger.info("Policy 'Users can view own profile' already exists.")
+                except Exception as e:
+                    logger.warning(f"Error creating view policy: {e}")
+                    
+                # Allow users to update their own profile
+                try:
+                    cur.execute("""
+                        CREATE POLICY "Users can update own profile" ON profiles
+                        FOR UPDATE USING (auth.uid() = id);
+                    """)
+                    logger.info("Created policy 'Users can update own profile'.")
+                except psycopg.errors.DuplicateObject:
+                    logger.info("Policy 'Users can update own profile' already exists.")
+                except Exception as e:
+                    logger.warning(f"Error creating update policy: {e}")
+                
+                 # Allow users to insert their own profile
+                try:
+                    cur.execute("""
+                        CREATE POLICY "Users can insert own profile" ON profiles
+                        FOR INSERT WITH CHECK (auth.uid() = id);
+                    """)
+                    logger.info("Created policy 'Users can insert own profile'.")
+                except psycopg.errors.DuplicateObject:
+                    logger.info("Policy 'Users can insert own profile' already exists.")
+                except Exception as e:
+                     logger.warning(f"Error creating insert policy: {e}")
+
+                logger.info("Profiles RLS policies restored.")
+
     except Exception as e:
         logger.error(f"Error applying security fixes: {e}")
 

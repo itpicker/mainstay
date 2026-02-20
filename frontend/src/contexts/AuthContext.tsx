@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { authApi } from '@/lib/api/auth';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
@@ -89,28 +90,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!password) {
             throw new Error("Password is required for real authentication");
         }
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-        });
-        if (error) throw error;
-        router.push('/projects'); // Redirect to dashboard
+
+        try {
+            // Call backend API instead of direct Supabase
+            const data = await authApi.login(email, password);
+
+            // Allow Supabase client to sync session if provided by backend (optional but good for consistency)
+            // But if we want to hide it completely, we rely on our own state.
+            // For now, let's just sync it so other components using supabase directly (if any remain) still work.
+            if (data.session) {
+                await supabase.auth.setSession({
+                    access_token: data.session.access_token,
+                    refresh_token: data.session.refresh_token,
+                });
+                // Updating session will trigger onAuthStateChange
+            }
+
+            router.push('/projects');
+        } catch (error: any) {
+            console.error("Login error via backend:", error);
+            throw error;
+        }
     };
 
     const signup = async (email: string, password: string, name: string) => {
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name: name
-                }
-            }
-        });
-        if (error) throw error;
-        // Check if email confirmation is required? 
-        // For dev, if disabled, it logs in automatically.
-        router.push('/projects');
+        try {
+            await authApi.signup(email, password, name);
+            // After signup, we might want to auto-login or ask user to confirm email.
+            // For now, just redirect to login or dashboard if backend auto-logins.
+            // Current backend signup returns {message: ...}, doesn't return session.
+            router.push('/login?message=Signup successful. Please log in.');
+        } catch (error: any) {
+            throw error;
+        }
     };
 
     const logout = async () => {
